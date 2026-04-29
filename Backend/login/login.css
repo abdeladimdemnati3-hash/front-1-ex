@@ -1,0 +1,86 @@
+
+    body {
+      background-color: #D3D3D3;
+      font-family: "Segoe UI", Tahoma, sans-serif;
+    }
+
+    .im {
+      width: 50%;
+      margin: 10px auto;
+      display: block;
+      border-radius: 5px;
+      text-align: center;
+    }
+
+    .form {
+      width: 30%;
+      margin: 20px auto;
+      border-radius: 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .form input, .form button {
+      width: 100%;
+      padding: 12px 20px;
+      border-radius: 8px;
+      border: 2px solid #ccc;
+      box-sizing: border-box;
+      font-size: 16px;
+    }
+
+    .form button {
+      background-color: blue;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 10px;
+    }
+
+    .link-Sign-up {
+      display: block;
+      text-align: center;
+      margin-top: 12px;
+      color: blue;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .footer-lang {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .footer-lang a {
+      color: grey;
+      text-decoration: none;
+      margin: 0 6px;
+    }
+
+    /* ===== Mobile (max 767px) ===== */
+    @media (max-width: 767px) {
+      .im { width: 80%; }
+      .form { width: 90%; }
+    }
+
+    /* ===== Tablette (768px - 1023px) ===== */
+    @media (min-width: 768px) and (max-width: 1023px) {
+      .im { width: 60%; }
+      .form { width: 70%; }
+    }
+
+    /* ===== Desktop (min-width: 1024px) ===== */
+    @media (min-width: 1024px) {
+      .im { width: 50%; }
+      .form { width: 30%; }
+    }
+
+    /* ===== Très petit mobile (max 480px) ===== */
+    @media (max-width: 480px) {
+      .im { width: 90%; }
+      .form { width: 95%; }
+      .form input, .form button { font-size: 14px; }
+      .footer-lang { display: flex; flex-direction: column; gap: 5px; }
+    }

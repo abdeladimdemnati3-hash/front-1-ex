@@ -1,0 +1,35 @@
+.cart-page {
+  margin-top: 26px;
+  background: #fff;
+  border: 1px solid #d8e0ea;
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.cart-page h1 {
+  margin: 0 0 14px;
+  color: #0f6ddf;
+}
+
+.empty-state {
+  margin: 0;
+  border: 1px dashed #d8e0ea;
+  border-radius: 12px;
+  background: #f9fbfd;
+  color: #5b6b7d;
+  padding: 14px;
+}
+
+.total-line {
+  font-weight: 700;
+}
+
+.cart-summary {
+  margin-top: 16px;
+  border-top: 1px solid #e7edf5;
+  padding-top: 12px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}

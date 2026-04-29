@@ -1,0 +1,220 @@
+<?php
+session_start();
+include "./config/db.php";
+
+$search = trim($_GET['q'] ?? '');
+$currentUser = $_SESSION['user'] ?? null;
+$userName = $currentUser['NOM'] ?? $currentUser['nom'] ?? null;
+$userEmail = $currentUser['EMAIL'] ?? $currentUser['email'] ?? null;
+$typeAdmin = $currentUser['type_admin'] ?? $currentUser['TYPE_ADMIN'] ?? 'N';
+$isAdmin = $typeAdmin === 'A';
+$cartCount = 0;
+$addedToCart = isset($_GET['added']);
+$userImage = $currentUser['image'] ?? $currentUser['IMAGE'] ?? 'default.png';
+
+$pdo->exec(
+  "CREATE TABLE IF NOT EXISTS produits (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nom VARCHAR(255) NOT NULL,
+    prix DECIMAL(10,2) NOT NULL,
+    image VARCHAR(255) DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )"
+);
+
+$productsSql = "SELECT id, nom, prix, image FROM produits";
+$productsParams = [];
+
+if ($search !== '') {
+  $productsSql .= " WHERE nom LIKE ?";
+  $productsParams[] = "%$search%";
+}
+
+$productsSql .= " ORDER BY id DESC";
+$productsStmt = $pdo->prepare($productsSql);
+$productsStmt->execute($productsParams);
+$products = $productsStmt->fetchAll(PDO::FETCH_ASSOC);
+$searchResultCount = count($products);
+
+if ($userEmail) {
+  $pdo->exec(
+    "CREATE TABLE IF NOT EXISTS cart_items (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NULL,
+      user_email VARCHAR(255) NOT NULL,
+      product_name VARCHAR(255) NOT NULL,
+      product_price DECIMAL(10,2) NOT NULL,
+      product_image VARCHAR(255) DEFAULT NULL,
+      quantity INT NOT NULL DEFAULT 1,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )"
+  );
+
+  $cartSql = "SELECT quantity FROM cart_items WHERE user_email = ? ORDER BY id DESC";
+  $cartStmt = $pdo->prepare($cartSql);
+  $cartStmt->execute([$userEmail]);
+  $cartItems = $cartStmt->fetchAll(PDO::FETCH_ASSOC);
+
+  foreach ($cartItems as $item) {
+    $cartCount += (int)$item['quantity'];
+  }
+}
+
+$cartStatus = $cartCount > 0 ? '(' . $cartCount . ' article(s))' : '(Vide)';
+
+
+?>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BuyEase Pc</title>
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link href="index-style.css" rel="stylesheet">
+  </head>
+  <body>
+    <div class="main-container">
+      <header class="header-top-row">
+        <nav class="logo">
+          <a href="index.php">
+            <img src="img/logo.eco.png" alt="BuyEase Logo" width="300" />
+          </a>
+        </nav>
+
+        <form action="index.php" method="GET" class="simple-search-form">
+          <input
+            type="text"
+            name="q"
+            placeholder="Rechercher un produit..."
+            class="search-input-simple"
+            value="<?= htmlspecialchars($search) ?>"
+          />
+          <button type="submit" class="search-button-simple">OK</button>
+        </form>
+
+        <div class="user-actions">
+          <div class="account-info">
+            <span>Bienvenue</span>
+            <?php if ($currentUser): ?>
+              <a href="Pages/profile.php"><?= htmlspecialchars($userName ?: $userEmail) ?></a>
+            <?php else: ?>
+              <a href="Backend/login/Login.php">Identifiez-vous</a>
+            <?php endif; ?>
+          </div>
+
+          <a href="Pages/panier.php" class="cart-link">
+            <div class="cart-icon-container">
+              <i class="fas fa-shopping-cart" style="color: #007bff"></i>
+              <span class="cart-count"><?= (int)$cartCount ?></span>
+            </div>
+            <div class="cart-details">
+              <span class="cart-label">Panier</span>
+              <span class="cart-status"><?= htmlspecialchars($cartStatus) ?></span>
+            </div>
+          </a>
+        </div>
+      </header>
+
+      <nav>
+        <div class="main-nav-buttons">
+          <a href="index.php" class="nav-button">Home</a>
+          <a href="Pages/about/about.php" class="nav-button">À propos</a>
+          <a href="Pages/Services/Services.php" class="nav-button">Services</a>
+          <a href="Pages/CONTACT/Contact.php" class="nav-button">Contact</a>
+          <a href="Pages/Legal/Legal.php" class="nav-button">Legal</a>
+        </div>
+
+        <div class="auth-buttons-group">
+          <?php if ($currentUser && $isAdmin): ?>
+            <a href="Backend/admin/admin.php" class="auth-button admin-button">Admin</a>
+          <?php endif; ?>
+          <?php if ($currentUser): ?>
+            <a href="Pages/profile.php" class="auth-button profile-button">Profile</a>
+            <a href="Backend/login/logout.php" class="auth-button logout-button">Logout</a>
+          <?php else: ?>
+            <a href="Backend/login/Login.php" class="auth-button">Login</a>
+            <a href="Backend/Sign_up/Sign_up.php" class="auth-button">Sign up</a>
+          <?php endif; ?>
+        </div>
+      </nav>
+
+      <main>
+        <div class="content-block">
+          <h2>Bienvenue sur BuyEase Pc</h2>
+          <p>
+            Plonge dans l'univers du gaming haute performance ! Ici, nous
+            assemblons des PC Gamer puissants, conçus pour offrir vitesse,
+            stabilité et graphismes ultra-fluides.
+          </p>
+        </div>
+
+        <div class="products-grid">
+          <?php if ($addedToCart): ?>
+            <p class="cart-flash success">Produit ajoute au panier.</p>
+          <?php endif; ?>
+
+          <?php if ($search !== ''): ?>
+            <div class="search-summary">
+              <span><?= $searchResultCount ?> resultat(s) pour "<?= htmlspecialchars($search) ?>"</span>
+              <a href="index.php" class="clear-search-link">Effacer</a>
+            </div>
+          <?php endif; ?>
+
+          <?php if (empty($products)): ?>
+            <p class="empty-products">Aucun produit disponible pour le moment.</p>
+          <?php else: ?>
+            <?php foreach ($products as $product): ?>
+              <div class="product-slot">
+                <div class="custom-card">
+                  <?php if (!empty($product['image'])): ?>
+                    <img
+                      class="card-img"
+                      src="img/<?= htmlspecialchars($product['image']) ?>"
+                      alt="<?= htmlspecialchars($product['nom']) ?>"
+                    />
+                  <?php else: ?>
+                    <img
+                      class="card-img"
+                      src="img/logo.eco.png"
+                      alt="Produit sans image"
+                    />
+                  <?php endif; ?>
+
+                  <h5 class="card-title"><?= htmlspecialchars($product['nom']) ?></h5>
+                  <div class="price-tag">
+                    <?= number_format((float)$product['prix'], 2) ?> MAD
+                  </div>
+
+                  <?php if ($currentUser): ?>
+                    <form action="Backend/cart.php" method="POST" class="details-button add-cart-form">
+                      <input type="hidden" name="product_name" value="<?= htmlspecialchars($product['nom']) ?>">
+                      <input type="hidden" name="product_price" value="<?= (float)$product['prix'] ?>">
+                      <input type="hidden" name="product_image" value="<?= htmlspecialchars($product['image'] ?? '') ?>">
+                      <input type="hidden" name="quantity" value="1">
+                      <input type="hidden" name="redirect" value="index.php<?= $search !== '' ? '?q=' . urlencode($search) : '' ?>">
+                      <button type="submit" class="btn-sh">Ajouter au panier</button>
+                    </form>
+                  <?php else: ?>
+                    <nav class="details-button"><a class="btn-sh" href="Backend/login/Login.php">Connectez-vous</a></nav>
+                  <?php endif; ?>
+                </div>
+              </div>
+            <?php endforeach; ?>
+          <?php endif; ?>
+        </div>
+      </main>
+    </div>
+    <footer class="site-footer">
+      <div class="footer-container">
+        <p class="copyright">&copy; 2026 BuyEase Pc</p>
+      </div>
+      <div></div>
+     
+    </footer>
+  </body>
+</html>
