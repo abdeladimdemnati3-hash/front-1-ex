@@ -89,6 +89,7 @@ $cartStatus = $cartCount > 0 ? '(' . $cartCount . ' article(s))' : '(Vide)';
       <div class="main-nav-buttons">
         <a href="../index.php" class="nav-button">Home</a>
         <a href="profile.php" class="nav-button">Profile</a>
+        <a href="commandes.php" class="nav-button">Commandes</a>
       </div>
 
       <div class="auth-buttons-group">

@@ -95,6 +95,7 @@ if (!is_file(__DIR__ . '/../img/' . basename($userImage))) {
       <div class="main-nav-buttons">
         <a href="../index.php" class="nav-button">Home</a>
         <a href="panier.php" class="nav-button">Panier</a>
+        <a href="commandes.php" class="nav-button">Commandes</a>
       </div>
 
       <div class="auth-buttons-group">

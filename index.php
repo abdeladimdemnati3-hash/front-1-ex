@@ -127,6 +127,10 @@ $cartStatus = $cartCount > 0 ? '(' . $cartCount . ' article(s))' : '(Vide)';
           <a href="Pages/Services/Services.php" class="nav-button">Services</a>
           <a href="Pages/CONTACT/Contact.php" class="nav-button">Contact</a>
           <a href="Pages/Legal/Legal.php" class="nav-button">Legal</a>
+          <?php if ($currentUser): ?>
+            <a href="Pages/panier.php" class="nav-button">Panier</a>
+            <a href="Pages/commandes.php" class="nav-button">Commandes</a>
+          <?php endif; ?>
         </div>
 
         <div class="auth-buttons-group">
