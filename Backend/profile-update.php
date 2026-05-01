@@ -52,10 +52,27 @@ if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
     }
 }
 
-// Update database using uppercase column names for consistency
-$updateSql = "UPDATE users SET NOM = ?, image = ? WHERE EMAIL = ?";
-$updateStmt = $pdo->prepare($updateSql);
-$updateStmt->execute([$newName, $newImage, $currentEmail]);
+// Sanitize image name before saving
+$newImage = basename($newImage);
+if (empty($newImage)) {
+    $newImage = 'default.png';
+}
+
+// Update database - try both column names to ensure it works
+try {
+    $updateSql = "UPDATE users SET NOM = ?, image = ? WHERE EMAIL = ?";
+    $updateStmt = $pdo->prepare($updateSql);
+    $result = $updateStmt->execute([$newName, $newImage, $currentEmail]);
+    
+    if (!$result) {
+        throw new Exception("Database update failed");
+    }
+} catch (Exception $e) {
+    // Fallback: try with lowercase email
+    $updateSql = "UPDATE users SET NOM = ?, image = ? WHERE email = ?";
+    $updateStmt = $pdo->prepare($updateSql);
+    $updateStmt->execute([$newName, $newImage, $currentEmail]);
+}
 
 // Update session with both upper and lowercase keys for compatibility
 $_SESSION['user']['NOM'] = $newName;

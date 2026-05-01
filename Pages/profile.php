@@ -11,6 +11,13 @@ if (!$currentUser) {
 $userName = $currentUser['NOM'] ?? $currentUser['nom'] ?? 'User';
 $userEmail = $currentUser['EMAIL'] ?? $currentUser['email'] ?? '';
 $userImage = $currentUser['image'] ?? $currentUser['IMAGE'] ?? 'default.png';
+
+// Sanitize image name
+$userImage = basename($userImage);
+if (empty($userImage) || $userImage === '') {
+    $userImage = 'default.png';
+}
+
 $typeAdmin = $currentUser['type_admin'] ?? $currentUser['TYPE_ADMIN'] ?? 'N';
 $isAdmin = $typeAdmin === 'A';
 
