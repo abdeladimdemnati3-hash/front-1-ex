@@ -247,6 +247,16 @@ if ($view === 'orders') {
             color: #1c7b39;
         }
 
+        .error-flash {
+            background: #fef1f0;
+            border-color: #f9d4ce;
+            color: #c41e3a;
+        }
+
+        .error-flash p {
+            margin: 5px 0;
+        }
+
         /* Orders Table Styles */
         .orders-section {
             margin: 20px auto;
@@ -353,6 +363,15 @@ if ($view === 'orders') {
     <p class="flash">Produit mis a jour avec succes.</p>
 <?php elseif ($status === 'deleted'): ?>
     <p class="flash">Produit supprime avec succes.</p>
+<?php endif; ?>
+
+<?php if (!empty($_SESSION['product_errors'])): ?>
+    <div class="flash error-flash">
+        <?php foreach ($_SESSION['product_errors'] as $error): ?>
+            <p>❌ <?= htmlspecialchars($error) ?></p>
+        <?php endforeach; ?>
+    </div>
+    <?php unset($_SESSION['product_errors']); ?>
 <?php endif; ?>
 
 <?php if ($view === 'products'): ?>
