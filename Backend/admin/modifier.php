@@ -115,6 +115,13 @@ if (!$product) {
             <input type="hidden" name="current_image" value="<?= htmlspecialchars($product['image'] ?? '') ?>">
             <input type="text" name="nom" value="<?= htmlspecialchars($product['nom']) ?>" required>
             <input type="number" step="0.01" min="0.01" name="prix" value="<?= htmlspecialchars($product['prix']) ?>" required>
+            <select name="type" required>
+                <option value="PC" <?= ($product['product_type'] ?? 'General') === 'PC' ? 'selected' : '' ?>>PC</option>
+                <option value="Laptop" <?= ($product['product_type'] ?? 'General') === 'Laptop' ? 'selected' : '' ?>>Laptop</option>
+                <option value="PC-Gamer" <?= ($product['product_type'] ?? 'General') === 'PC-Gamer' ? 'selected' : '' ?>>PC-Gamer</option>
+                <option value="CPU" <?= ($product['product_type'] ?? 'General') === 'CPU' ? 'selected' : '' ?>>CPU</option>
+                <option value="GPU" <?= ($product['product_type'] ?? 'General') === 'GPU' ? 'selected' : '' ?>>GPU</option>
+            </select>
             <input type="file" name="image" accept="image/*">
             <p class="hint">Laissez l'image vide pour garder l'image actuelle.</p>
             <button type="submit">Enregistrer</button>

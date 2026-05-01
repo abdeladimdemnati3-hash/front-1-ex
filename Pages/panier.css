@@ -30,6 +30,23 @@
   padding-top: 12px;
   display: flex;
   justify-content: space-between;
+  align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.checkout-btn {
+  background: #0f6ddf;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background 0.3s ease;
+}
+
+.checkout-btn:hover {
+  background: #0a52b0;
 }

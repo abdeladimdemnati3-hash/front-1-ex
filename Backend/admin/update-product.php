@@ -21,9 +21,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $id = (int)($_POST['id'] ?? 0);
 $nom = trim($_POST['nom'] ?? '');
 $prix = (float)($_POST['prix'] ?? 0);
+$type = trim($_POST['type'] ?? 'General');
 $currentImage = basename(trim($_POST['current_image'] ?? ''));
 
-if ($id <= 0 || $nom === '' || $prix <= 0) {
+if ($id <= 0 || $nom === '' || $prix <= 0 || $type === '') {
     header("Location: admin.php");
     exit();
 }
@@ -51,8 +52,8 @@ if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
     }
 }
 
-$updateStmt = $pdo->prepare("UPDATE produits SET nom = ?, prix = ?, image = ? WHERE id = ?");
-$updateStmt->execute([$nom, $prix, $imageName, $id]);
+$updateStmt = $pdo->prepare("UPDATE produits SET nom = ?, prix = ?, image = ?, product_type = ? WHERE id = ?");
+$updateStmt->execute([$nom, $prix, $imageName, $type, $id]);
 
 header("Location: admin.php?status=updated");
 exit();

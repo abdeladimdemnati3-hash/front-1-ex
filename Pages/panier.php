@@ -110,6 +110,11 @@ $cartStatus = $cartCount > 0 ? '(' . $cartCount . ' article(s))' : '(Vide)';
         <p class="cart-flash warning">Produit retire du panier.</p>
       <?php endif; ?>
 
+      <?php if (isset($_SESSION['order_message'])): ?>
+        <p class="cart-flash success"><?= htmlspecialchars($_SESSION['order_message']) ?></p>
+        <?php unset($_SESSION['order_message']); ?>
+      <?php endif; ?>
+
       <?php if (empty($cartItems)): ?>
         <p class="empty-state">Votre panier est vide.</p>
       <?php else: ?>
@@ -136,6 +141,11 @@ $cartStatus = $cartCount > 0 ? '(' . $cartCount . ' article(s))' : '(Vide)';
         <div class="cart-summary">
           <p>Articles: <strong><?= (int)$cartCount ?></strong></p>
           <p>Total: <strong><?= number_format($total, 2) ?> MAD</strong></p>
+          
+          <form action="../Backend/checkout.php" method="POST">
+            <input type="hidden" name="place_order" value="1">
+            <button type="submit" class="checkout-btn">Passer la Commande</button>
+          </form>
         </div>
       <?php endif; ?>
     </main>

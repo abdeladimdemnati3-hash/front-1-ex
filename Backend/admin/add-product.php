@@ -24,17 +24,20 @@ $pdo->exec(
 		nom VARCHAR(255) NOT NULL,
 		prix DECIMAL(10,2) NOT NULL,
 		image VARCHAR(255) DEFAULT NULL,
+		product_type VARCHAR(100) DEFAULT 'General',
 		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 	)"
 );
 
 $nom = $_POST['nom'] ?? '';
 $prix = $_POST['prix'] ?? '';
+$type = $_POST['type'] ?? 'General';
 
 $nom = trim($nom);
 $prix = (float)$prix;
+$type = trim($type);
 
-if ($nom === '' || $prix <= 0 || !isset($_FILES['image'])) {
+if ($nom === '' || $prix <= 0 || $type === '' || !isset($_FILES['image'])) {
 	header("Location: admin.php");
 	exit();
 }
@@ -54,9 +57,9 @@ if (!move_uploaded_file($tmp, "../../img/" . $imageName)) {
 	exit();
 }
 
-$sql = "INSERT INTO produits (nom, prix, image) VALUES (?, ?, ?)";
+$sql = "INSERT INTO produits (nom, prix, image, product_type) VALUES (?, ?, ?, ?)";
 $stmt = $pdo->prepare($sql);
-$stmt->execute([$nom, $prix, $imageName]);
+$stmt->execute([$nom, $prix, $imageName, $type]);
 
 header("Location: admin.php?status=added");
 exit();
