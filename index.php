@@ -22,12 +22,28 @@ $pdo->exec(
   )"
 );
 
-$productsSql = "SELECT id, nom, prix, image FROM produits";
+$validTypes = ['all', 'PC', 'Laptop', 'PC-Gamer', 'CPU', 'GPU'];
+$typeFilter = $_GET['type'] ?? 'all';
+if (!in_array($typeFilter, $validTypes, true)) {
+  $typeFilter = 'all';
+}
+
+$productsSql = "SELECT id, nom, prix, image, COALESCE(product_type, type_product) AS product_type FROM produits";
 $productsParams = [];
+$where = [];
 
 if ($search !== '') {
-  $productsSql .= " WHERE nom LIKE ?";
+  $where[] = "nom LIKE ?";
   $productsParams[] = "%$search%";
+}
+
+if ($typeFilter !== 'all') {
+  $where[] = "COALESCE(product_type, type_product) = ?";
+  $productsParams[] = $typeFilter;
+}
+
+if (!empty($where)) {
+  $productsSql .= " WHERE " . implode(' AND ', $where);
 }
 
 $productsSql .= " ORDER BY id DESC";
@@ -62,6 +78,12 @@ if ($userEmail) {
 
 $cartStatus = $cartCount > 0 ? '(' . $cartCount . ' article(s))' : '(Vide)';
 
+function buildQuery(array $params): string {
+    $query = array_merge($_GET, $params);
+    return http_build_query(array_filter($query, function ($value) {
+        return $value !== null && $value !== '';
+    }));
+}
 
 ?>
 <!DOCTYPE html>
@@ -157,7 +179,36 @@ $cartStatus = $cartCount > 0 ? '(' . $cartCount . ' article(s))' : '(Vide)';
           </p>
         </div>
 
-        <div class="products-grid">
+        <div class="catalog-layout">
+          <aside class="type-sidebar">
+            <h3>Catégories</h3>
+            <p class="type-sidebar-note">Filtre vertical par type de produit.</p>
+            <div class="type-list">
+              <?php
+                $typeNames = [
+                  'all' => 'Tous les produits',
+                  'PC' => 'PC',
+                  'Laptop' => 'Laptop',
+                  'PC-Gamer' => 'PC Gamer',
+                  'CPU' => 'CPU',
+                  'GPU' => 'GPU',
+                ];
+              ?>
+              <?php foreach ($typeNames as $typeKey => $typeLabel): ?>
+                <a
+                  href="index.php?<?= buildQuery(['type' => $typeKey, 'q' => $search !== '' ? $search : null]) ?>"
+                  class="type-item <?= $typeFilter === $typeKey ? 'active' : '' ?>"
+                >
+                  <span><?= htmlspecialchars($typeLabel) ?></span>
+                  <?php if ($typeFilter === $typeKey): ?>
+                    <i class="fas fa-check"></i>
+                  <?php endif; ?>
+                </a>
+              <?php endforeach; ?>
+            </div>
+          </aside>
+
+          <div class="products-grid">
           <?php if ($addedToCart): ?>
             <p class="cart-flash success">Produit ajoute au panier.</p>
           <?php endif; ?>
@@ -211,6 +262,7 @@ $cartStatus = $cartCount > 0 ? '(' . $cartCount . ' article(s))' : '(Vide)';
             <?php endforeach; ?>
           <?php endif; ?>
         </div>
+      </div>
       </main>
     </div>
     <footer class="site-footer">

@@ -23,6 +23,13 @@ $showSearch = false;
         <div class="content-block contact-intro">
           <h2>Contactez-nous</h2>
           <p>Envoyez-nous votre message, nous repondons rapidement.</p>
+          
+          <?php if(isset($_GET['success'])): ?>
+            <div class="success-message">
+              <i class="fas fa-check-circle"></i>
+              Votre message a été envoyé avec succès ! Nous vous répondrons bientôt.
+            </div>
+          <?php endif; ?>
         </div>
 
         <div class="contact-form-container">

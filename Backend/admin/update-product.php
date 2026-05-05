@@ -52,7 +52,7 @@ if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
     }
 }
 
-$updateStmt = $pdo->prepare("UPDATE produits SET nom = ?, prix = ?, image = ?, product_type = ? WHERE id = ?");
+$updateStmt = $pdo->prepare("UPDATE produits SET nom = ?, prix = ?, image = ?, type_product = ? WHERE id = ?");
 $updateStmt->execute([$nom, $prix, $imageName, $type, $id]);
 
 header("Location: admin.php?status=updated");

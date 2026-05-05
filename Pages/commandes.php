@@ -20,16 +20,31 @@ if (empty($userImage) || $userImage === '') {
     $userImage = 'default.png';
 }
 
-// Get cart count
-$cartCount = 0;
-$cartStmt = $pdo->prepare("SELECT quantity FROM cart_items WHERE user_email = ?");
-$cartStmt->execute([$userEmail]);
-$cartItems = $cartStmt->fetchAll(PDO::FETCH_ASSOC);
-foreach ($cartItems as $item) {
-    $cartCount += (int)$item['quantity'];
+// Ensure orders table has required columns
+try {
+    $pdo->exec("ALTER TABLE orders ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+} catch (Exception $e) {
+    // ignore if column already exists
 }
 
-$cartStatus = $cartCount > 0 ? '(' . $cartCount . ' article(s))' : '(Vide)';
+try {
+    $pdo->exec("ALTER TABLE orders ADD COLUMN order_status VARCHAR(50) DEFAULT 'Pending'");
+} catch (Exception $e) {
+    // ignore if column already exists
+}
+
+// Ensure order_items table has required columns
+try {
+    $pdo->exec("ALTER TABLE order_items ADD COLUMN product_price DECIMAL(10,2) DEFAULT 0");
+} catch (Exception $e) {
+    // ignore if column already exists
+}
+
+try {
+    $pdo->exec("ALTER TABLE order_items ADD COLUMN subtotal DECIMAL(10,2) DEFAULT 0");
+} catch (Exception $e) {
+    // ignore if column already exists
+}
 
 // Get status filter from query
 $statusFilter = $_GET['status'] ?? 'all';
@@ -38,27 +53,35 @@ if (!in_array($statusFilter, $validStatuses)) {
     $statusFilter = 'all';
 }
 
-// Get user's orders
-$ordersSql = "SELECT * FROM orders WHERE user_email = ?";
-$orderParams = [$userEmail];
+// Get user's orders with safe handling
+try {
+    $ordersSql = "SELECT * FROM orders WHERE user_email = ?";
+    $orderParams = [$userEmail];
 
-if ($statusFilter !== 'all') {
-    $ordersSql .= " AND order_status = ?";
-    $orderParams[] = $statusFilter;
+    if ($statusFilter !== 'all') {
+        $ordersSql .= " AND order_status = ?";
+        $orderParams[] = $statusFilter;
+    }
+
+    $ordersSql .= " ORDER BY created_at DESC";
+    $ordersStmt = $pdo->prepare($ordersSql);
+    $ordersStmt->execute($orderParams);
+    $orders = $ordersStmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (Exception $e) {
+    $orders = [];
 }
 
-$ordersSql .= " ORDER BY created_at DESC";
-$ordersStmt = $pdo->prepare($ordersSql);
-$ordersStmt->execute($orderParams);
-$orders = $ordersStmt->fetchAll(PDO::FETCH_ASSOC);
-
-// Get order items for display
+// Get order items for display with safe handling
 $orderItems = [];
 foreach ($orders as $order) {
-    $itemsSql = "SELECT * FROM order_items WHERE order_id = ?";
-    $itemsStmt = $pdo->prepare($itemsSql);
-    $itemsStmt->execute([$order['id']]);
-    $orderItems[$order['id']] = $itemsStmt->fetchAll(PDO::FETCH_ASSOC);
+    try {
+        $itemsSql = "SELECT * FROM order_items WHERE order_id = ?";
+        $itemsStmt = $pdo->prepare($itemsSql);
+        $itemsStmt->execute([$order['id']]);
+        $orderItems[$order['id']] = $itemsStmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        $orderItems[$order['id']] = [];
+    }
 }
 
 $avatarPath = '../img/' . basename($userImage);
@@ -161,17 +184,24 @@ if (!is_file(__DIR__ . '/../img/' . basename($userImage))) {
       <?php else: ?>
         <div class="orders-list">
           <?php foreach ($orders as $order): ?>
+            <?php
+                $orderId = $order['id'] ?? 0;
+                $orderStatus = $order['order_status'] ?? 'Pending';
+                $orderDate = $order['created_at'] ?? null;
+                $orderDateStr = $orderDate ? date('d/m/Y à H:i', strtotime($orderDate)) : 'Date non disponible';
+                $totalAmount = $order['total_amount'] ?? 0;
+            ?>
             <div class="order-card">
               <div class="order-header">
                 <div class="order-info">
-                  <h3>Commande #<?= (int)$order['id'] ?></h3>
+                  <h3>Commande #<?= (int)$orderId ?></h3>
                   <p class="order-date">
                     <i class="fas fa-calendar"></i>
-                    <?= date('d/m/Y à H:i', strtotime($order['created_at'])) ?>
+                    <?= htmlspecialchars($orderDateStr) ?>
                   </p>
                 </div>
                 <div class="order-status">
-                  <span class="status-badge status-<?= strtolower($order['order_status']) ?>">
+                  <span class="status-badge status-<?= strtolower($orderStatus) ?>">
                     <?php 
                       $statusText = [
                         'Pending' => 'En attente',
@@ -180,7 +210,7 @@ if (!is_file(__DIR__ . '/../img/' . basename($userImage))) {
                         'Delivered' => 'Livrée',
                         'Cancelled' => 'Annulée'
                       ];
-                      echo $statusText[$order['order_status']] ?? $order['order_status'];
+                      echo $statusText[$orderStatus] ?? htmlspecialchars($orderStatus);
                     ?>
                   </span>
                 </div>
@@ -197,13 +227,13 @@ if (!is_file(__DIR__ . '/../img/' . basename($userImage))) {
                     </tr>
                   </thead>
                   <tbody>
-                    <?php if (isset($orderItems[$order['id']])): ?>
-                      <?php foreach ($orderItems[$order['id']] as $item): ?>
+                    <?php if (isset($orderItems[$orderId])): ?>
+                      <?php foreach ($orderItems[$orderId] as $item): ?>
                         <tr>
-                          <td><?= htmlspecialchars($item['product_name']) ?></td>
-                          <td class="text-right"><?= number_format((float)$item['product_price'], 2, ',', ' ') ?> MAD</td>
-                          <td class="text-right"><?= (int)$item['quantity'] ?></td>
-                          <td class="text-right font-bold"><?= number_format((float)$item['subtotal'], 2, ',', ' ') ?> MAD</td>
+                          <td><?= htmlspecialchars($item['product_name'] ?? 'Produit inconnu') ?></td>
+                          <td class="text-right"><?= number_format((float)($item['product_price'] ?? 0), 2, ',', ' ') ?> MAD</td>
+                          <td class="text-right"><?= (int)($item['quantity'] ?? 0) ?></td>
+                          <td class="text-right font-bold"><?= number_format((float)($item['subtotal'] ?? 0), 2, ',', ' ') ?> MAD</td>
                         </tr>
                       <?php endforeach; ?>
                     <?php endif; ?>
@@ -214,7 +244,7 @@ if (!is_file(__DIR__ . '/../img/' . basename($userImage))) {
               <div class="order-footer">
                 <div class="total-section">
                   <span class="total-label">Total:</span>
-                  <span class="total-amount"><?= number_format((float)$order['total_amount'], 2, ',', ' ') ?> MAD</span>
+                  <span class="total-amount"><?= number_format((float)$totalAmount, 2, ',', ' ') ?> MAD</span>
                 </div>
               </div>
             </div>

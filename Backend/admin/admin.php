@@ -16,7 +16,30 @@ if ($typeAdmin !== 'A') {
 
 $nomAdmin = $_SESSION['user']['NOM'] ?? $_SESSION['user']['nom'] ?? 'Admin';
 
-// Create orders tables if not exist
+// Create contact table if not exists
+$pdo->exec(
+    "CREATE TABLE IF NOT EXISTS contact (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        nom VARCHAR(255) NOT NULL,
+        email VARCHAR(255) NOT NULL,
+        message TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        status ENUM('unread', 'read', 'replied') DEFAULT 'unread'
+    )"
+);
+
+try {
+    $pdo->exec("ALTER TABLE contact ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+} catch (Exception $e) {
+    // ignore if column already exists or unsupported syntax
+}
+
+try {
+    $pdo->exec("ALTER TABLE contact ADD COLUMN status ENUM('unread','read','replied') DEFAULT 'unread'");
+} catch (Exception $e) {
+    // ignore if column already exists or unsupported syntax
+}
+
 $pdo->exec(
     "CREATE TABLE IF NOT EXISTS orders (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -29,6 +52,18 @@ $pdo->exec(
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )"
 );
+
+try {
+    $pdo->exec("ALTER TABLE orders ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+} catch (Exception $e) {
+    // ignore if column already exists
+}
+
+try {
+    $pdo->exec("ALTER TABLE orders ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+} catch (Exception $e) {
+    // ignore if column already exists
+}
 
 $pdo->exec(
     "CREATE TABLE IF NOT EXISTS order_items (
@@ -48,10 +83,33 @@ $pdo->exec(
         nom VARCHAR(255) NOT NULL,
         prix DECIMAL(10,2) NOT NULL,
         image VARCHAR(255) DEFAULT NULL,
-        product_type VARCHAR(100) DEFAULT 'General',
+        type_product VARCHAR(100) DEFAULT 'General',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )"
 );
+
+try {
+    $pdo->exec("ALTER TABLE produits ADD COLUMN IF NOT EXISTS type_product VARCHAR(100) DEFAULT 'General'");
+} catch (Exception $e) {
+    // ignore if column already exists or syntax unsupported
+}
+
+// Handle contact message status update
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_contact_status'])) {
+    $contactId = (int)$_POST['contact_id'];
+    $newStatus = $_POST['contact_status'];
+    $updateSql = "UPDATE contact SET status = ? WHERE id = ?";
+    $updateStmt = $pdo->prepare($updateSql);
+    $updateStmt->execute([$newStatus, $contactId]);
+}
+
+// Handle contact message deletion
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_contact'])) {
+    $contactId = (int)$_POST['contact_id'];
+    $deleteSql = "DELETE FROM contact WHERE id = ?";
+    $deleteStmt = $pdo->prepare($deleteSql);
+    $deleteStmt->execute([$contactId]);
+}
 
 // Handle order status update
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_order_status'])) {
@@ -69,19 +127,29 @@ $search = $_GET['search'] ?? '';
 $status = $_GET['status'] ?? '';
 
 if ($view === 'orders') {
-    // Get all orders
-    $ordersSql = "SELECT * FROM orders ORDER BY created_at DESC";
-    $ordersStmt = $pdo->prepare($ordersSql);
-    $ordersStmt->execute();
-    $orders = $ordersStmt->fetchAll(PDO::FETCH_ASSOC);
+    // Get all orders with safe handling
+    try {
+        $ordersSql = "SELECT * FROM orders ORDER BY created_at DESC";
+        $ordersStmt = $pdo->prepare($ordersSql);
+        $ordersStmt->execute();
+        $orders = $ordersStmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        $orders = [];
+    }
+} elseif ($view === 'contacts') {
+    // Get all contact messages
+    $contactsSql = "SELECT * FROM contact ORDER BY created_at DESC";
+    $contactsStmt = $pdo->prepare($contactsSql);
+    $contactsStmt->execute();
+    $contacts = $contactsStmt->fetchAll(PDO::FETCH_ASSOC);
 } else {
     // Get products
     if ($search) {
-        $sql = "SELECT * FROM produits 
+        $sql = "SELECT *, COALESCE(product_type, type_product) AS product_type FROM produits 
                 WHERE id LIKE ? 
                 OR nom LIKE ? 
                 OR prix LIKE ? 
-                OR image LIKE ?";
+                OR image LIKE ? ";
         
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
@@ -91,7 +159,7 @@ if ($view === 'orders') {
             "%$search%"
         ]);
     } else {
-        $sql="SELECT * FROM produits";
+        $sql="SELECT *, COALESCE(product_type, type_product) AS product_type FROM produits";
         $stmt = $pdo->prepare($sql);
         $stmt->execute();
     }
@@ -142,9 +210,14 @@ if ($view === 'orders') {
         }
 
         .container {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
+            max-width: 1600px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(5, minmax(220px, 1fr));
+            gap: 58px;
+            padding: 0 12px 24px;
+            align-items: stretch;
+            margin-top: 20px;
         }
 
         .top-links {
@@ -197,45 +270,126 @@ if ($view === 'orders') {
         }
 
         .card {
-            background: white;
-            width: 260px;
-            padding: 15px;
-            margin: 15px;
-            border-radius: 15px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            transition: 0.3s;
+            background: #ffffff;
+            width: 100%;
+            min-height: 340px;
+            padding: 18px;
+            border-radius: 22px;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow: hidden;
         }
 
         .card:hover {
-            transform: translateY(-10px);
+            transform: translateY(-6px);
+            box-shadow: 0 24px 45px rgba(15, 23, 42, 0.14);
         }
 
         img {
             width: 100%;
             height: 160px;
-            border-radius: 10px;
+            border-radius: 18px;
             object-fit: cover;
+            margin-bottom: 16px;
+        }
+
+        .card h3 {
+            margin: 0 0 10px;
+            font-size: 1.3rem;
+            letter-spacing: 0.02em;
+            color: #111827;
+        }
+
+        .card p {
+            margin: 8px 0;
+            color: #4b5563;
+            line-height: 1.5;
+        }
+
+        .card p strong {
+            color: #111827;
         }
 
         .actions {
             display: flex;
             justify-content: center;
-            gap: 8px;
-            margin-top: 8px;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+            align-items: center;
         }
 
         .actions a,
         .actions button {
-            margin: 5px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 1 1 130px;
+            min-width: 130px;
+            max-width: 100%;
+            padding: 12px 18px;
+            border-radius: 999px;
             text-decoration: none;
             cursor: pointer;
-            background: transparent;
-            border: none;
-            font-size: 15px;
+            font-size: 14px;
+            font-weight: 700;
+            transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+            border: 1px solid transparent;
+            background: #fff5f5;
+            color: #b91c1c;
+            box-shadow: inset 0 0 0 1px rgba(220, 38, 38, 0.12);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
-        .delete { color: red; }
-        .edit { color: #0a7b45; }
+        .actions a:hover,
+        .actions button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 24px rgba(15, 23, 42, 0.12);
+            background: #fde8e8;
+        }
+
+        .actions a:focus,
+        .actions button:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.22);
+        }
+
+        .edit,
+        .delete {
+            background: #fff5f5;
+            color: #b91c1c;
+            border-color: rgba(220, 38, 38, 0.18);
+        }
+
+        @media (max-width: 1400px) {
+            .container {
+                grid-template-columns: repeat(4, minmax(220px, 1fr));
+            }
+        }
+
+        @media (max-width: 1080px) {
+            .container {
+                grid-template-columns: repeat(3, minmax(220px, 1fr));
+            }
+        }
+
+        @media (max-width: 820px) {
+            .container {
+                grid-template-columns: repeat(2, minmax(220px, 1fr));
+            }
+        }
+
+        @media (max-width: 620px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
 
         .flash {
             display: inline-block;
@@ -330,6 +484,124 @@ if ($view === 'orders') {
             font-size: 12px;
         }
 
+        /* Contacts Section Styles */
+        .contacts-section {
+            margin: 20px auto;
+            max-width: 1000px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .contacts-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .contact-card {
+            border: 1px solid #d8e0ea;
+            border-radius: 12px;
+            background: #f9fbfd;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .contact-card:hover {
+            box-shadow: 0 4px 12px rgba(15, 109, 223, 0.1);
+            border-color: #0f6ddf;
+        }
+
+        .contact-card.status-unread {
+            border-left: 4px solid #ff9800;
+        }
+
+        .contact-card.status-read {
+            border-left: 4px solid #4caf50;
+        }
+
+        .contact-card.status-replied {
+            border-left: 4px solid #2196f3;
+        }
+
+        .contact-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 16px;
+            background: white;
+            border-bottom: 1px solid #e7edf5;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .contact-info h3 {
+            margin: 0 0 6px;
+            color: #1e293b;
+            font-size: 16px;
+        }
+
+        .contact-email,
+        .contact-date {
+            margin: 4px 0;
+            color: #5b6b7d;
+            font-size: 13px;
+        }
+
+        .contact-email i,
+        .contact-date i {
+            margin-right: 6px;
+            width: 14px;
+        }
+
+        .contact-status {
+            flex-shrink: 0;
+        }
+
+        .contact-body {
+            padding: 16px;
+        }
+
+        .contact-message {
+            margin: 0;
+            color: #1e293b;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+
+        .contact-actions {
+            padding: 16px;
+            background: white;
+            border-top: 1px solid #e7edf5;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .status-select {
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            font-size: 13px;
+        }
+
+        .delete-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .delete-btn:hover {
+            background: #c82333;
+        }
+
         .order-details-link {
             color: #007bff;
             cursor: pointer;
@@ -355,6 +627,7 @@ if ($view === 'orders') {
 <div class="view-tabs">
     <a href="?view=products" class="<?= ($view === 'products') ? 'active' : '' ?>">Produits</a>
     <a href="?view=orders" class="<?= ($view === 'orders') ? 'active' : '' ?>">Commandes</a>
+    <a href="?view=contacts" class="<?= ($view === 'contacts') ? 'active' : '' ?>">Messages</a>
 </div>
 
 <?php if ($status === 'added'): ?>
@@ -426,7 +699,7 @@ if ($view === 'orders') {
 
     </div>
 
-<?php else: ?>
+<?php elseif ($view === 'orders'): ?>
     <!-- ORDERS SECTION -->
     <div class="orders-section">
         <h2>Commandes des Utilisateurs</h2>
@@ -448,17 +721,21 @@ if ($view === 'orders') {
                 </thead>
                 <tbody>
                     <?php foreach ($orders as $order): ?>
+                        <?php
+                            $orderDate = $order['created_at'] ?? null;
+                            $orderDateStr = $orderDate ? date('d/m/Y H:i', strtotime($orderDate)) : 'Date non disponible';
+                        ?>
                         <tr>
                             <td><strong><?= (int)$order['id'] ?></strong></td>
                             <td><?= htmlspecialchars($order['user_name']) ?></td>
                             <td><?= htmlspecialchars($order['user_email']) ?></td>
                             <td><?= number_format((float)$order['total_amount'], 2) ?></td>
                             <td>
-                                <span class="status-<?= strtolower($order['order_status']) ?>">
-                                    <?= htmlspecialchars($order['order_status']) ?>
+                                <span class="status-<?= strtolower($order['order_status'] ?? 'pending') ?>">
+                                    <?= htmlspecialchars($order['order_status'] ?? 'Pending') ?>
                                 </span>
                             </td>
-                            <td><?= date('d/m/Y H:i', strtotime($order['created_at'])) ?></td>
+                            <td><?= $orderDateStr ?></td>
                             <td>
                                 <form action="" method="POST" style="display: inline;">
                                     <input type="hidden" name="order_id" value="<?= (int)$order['id'] ?>">
@@ -476,6 +753,68 @@ if ($view === 'orders') {
                     <?php endforeach; ?>
                 </tbody>
             </table>
+        <?php endif; ?>
+    </div>
+
+<?php elseif ($view === 'contacts'): ?>
+    <!-- CONTACTS SECTION -->
+    <div class="contacts-section">
+        <h2>Messages de Contact</h2>
+        
+        <?php if (empty($contacts)): ?>
+            <p style="text-align: center; color: #999;">Aucun message de contact pour le moment.</p>
+        <?php else: ?>
+            <div class="contacts-list">
+                <?php foreach ($contacts as $contact): ?>
+                    <?php
+                        $contactStatus = $contact['status'] ?? 'unread';
+                        $contactCreatedAt = $contact['created_at'] ?? null;
+                    ?>
+                    <div class="contact-card status-<?= htmlspecialchars($contactStatus) ?>">
+                        <div class="contact-header">
+                            <div class="contact-info">
+                                <h3>Message de <?= htmlspecialchars($contact['nom']) ?></h3>
+                                <p class="contact-email"><i class="fas fa-envelope"></i> <?= htmlspecialchars($contact['email']) ?></p>
+                                <p class="contact-date"><i class="fas fa-calendar"></i> <?= $contactCreatedAt ? date('d/m/Y H:i', strtotime($contactCreatedAt)) : 'Date non disponible' ?></p>
+                            </div>
+                            <div class="contact-status">
+                                <span class="status-badge status-<?= htmlspecialchars($contactStatus) ?>">
+                                    <?php 
+                                        $statusText = [
+                                            'unread' => 'Non lu',
+                                            'read' => 'Lu',
+                                            'replied' => 'Répondu'
+                                        ];
+                                        echo $statusText[$contactStatus] ?? htmlspecialchars($contactStatus);
+                                    ?>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="contact-body">
+                            <p class="contact-message"><?= nl2br(htmlspecialchars($contact['message'])) ?></p>
+                        </div>
+
+                        <div class="contact-actions">
+                            <form action="" method="POST" style="display: inline;">
+                                <input type="hidden" name="contact_id" value="<?= (int)$contact['id'] ?>">
+                                <input type="hidden" name="update_contact_status" value="1">
+                                <select name="contact_status" class="status-select" onchange="this.form.submit()">
+                                    <option value="unread" <?= ($contactStatus === 'unread') ? 'selected' : '' ?>>Non lu</option>
+                                    <option value="read" <?= ($contactStatus === 'read') ? 'selected' : '' ?>>Lu</option>
+                                    <option value="replied" <?= ($contactStatus === 'replied') ? 'selected' : '' ?>>Répondu</option>
+                                </select>
+                            </form>
+                            
+                            <form action="" method="POST" style="display: inline;" onsubmit="return confirm('Supprimer ce message ?')">
+                                <input type="hidden" name="contact_id" value="<?= (int)$contact['id'] ?>">
+                                <input type="hidden" name="delete_contact" value="1">
+                                <button type="submit" class="delete-btn">Supprimer</button>
+                            </form>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
         <?php endif; ?>
     </div>
 

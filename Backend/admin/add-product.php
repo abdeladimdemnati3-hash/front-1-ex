@@ -24,27 +24,47 @@ $pdo->exec(
 		nom VARCHAR(255) NOT NULL,
 		prix DECIMAL(10,2) NOT NULL,
 		image VARCHAR(255) DEFAULT NULL,
-		product_type VARCHAR(100) DEFAULT 'General',
+		type_product VARCHAR(100) DEFAULT 'General',
 		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 	)"
 );
 
+try {
+	$pdo->exec("ALTER TABLE produits ADD COLUMN IF NOT EXISTS type_product VARCHAR(100) DEFAULT 'General'");
+} catch (Exception $e) {
+	// ignore if column already exists or syntax unsupported
+}
+
+try {
+	$pdo->exec("ALTER TABLE produits ADD COLUMN product_type VARCHAR(100) DEFAULT 'General'");
+} catch (Exception $e) {
+	// Column may already exist; ignore error
+}
+
 $nom = trim($_POST['nom'] ?? '');
-$prix = (float)($_POST['prix'] ?? 0);
+$prixRaw = trim($_POST['prix'] ?? '');
+$prixClean = str_replace([' ', ','], ['', '.'], $prixRaw);
 $type = trim($_POST['type'] ?? 'General');
 $errors = [];
+
+$allowedTypes = ['PC', 'Laptop', 'PC-Gamer', 'CPU', 'GPU', 'General'];
 
 // Validation
 if ($nom === '') {
 	$errors[] = 'Le nom du produit est obligatoire';
 }
 
-if ($prix <= 0) {
-	$errors[] = 'Le prix doit être un nombre positif';
+if ($prixClean === '' || !is_numeric($prixClean)) {
+	$errors[] = 'Le prix doit être un nombre valide';
+} else {
+	$prix = (float)$prixClean;
+	if ($prix <= 0) {
+		$errors[] = 'Le prix doit être un nombre positif';
+	}
 }
 
-if ($type === '') {
-	$errors[] = 'Le type de produit est obligatoire';
+if ($type === '' || !in_array($type, $allowedTypes, true)) {
+	$errors[] = 'Le type de produit est invalide';
 }
 
 if (!isset($_FILES['image']) || $_FILES['image']['error'] !== UPLOAD_ERR_OK) {
@@ -95,7 +115,7 @@ if (!move_uploaded_file($tmp, $imgPath)) {
 }
 
 try {
-	$sql = "INSERT INTO produits (nom, prix, image, product_type) VALUES (?, ?, ?, ?)";
+	$sql = "INSERT INTO produits (nom, prix, image, type_product) VALUES (?, ?, ?, ?)";
 	$stmt = $pdo->prepare($sql);
 	$stmt->execute([$nom, $prix, $imageName, $type]);
 	header("Location: admin.php?status=added");
@@ -105,7 +125,12 @@ try {
 	if (file_exists($imgPath)) {
 		@unlink($imgPath);
 	}
-	$_SESSION['product_errors'] = ['Erreur lors de l\'ajout du produit. Veuillez réessayer.'];
+	$errorMessage = $e->getMessage();
+	error_log("add-product.php error: " . $errorMessage);
+	$_SESSION['product_errors'] = [
+		'Erreur lors de l\'ajout du produit. Veuillez réessayer.',
+		'Détail: ' . $errorMessage
+	];
 	header("Location: admin.php");
 	exit();
 }

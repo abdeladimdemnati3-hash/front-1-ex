@@ -3,19 +3,35 @@
 }
 
 .contact-page .main-container > nav {
+  display: flex;
   justify-content: flex-start;
-  align-items: flex-start;
-  flex-direction: column;
-  gap: 18px;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  width: 100%;
 }
 
-.contact-page .main-nav-buttons,
-.contact-page .auth-buttons-group {
-  justify-content: flex-start;
+.contact-page .main-nav-buttons {
+  display: flex;
+  gap: 6px;
+  flex-wrap: nowrap;
+  align-items: center;
 }
 
 .contact-page .auth-buttons-group {
+  display: flex;
+  gap: 6px;
+  flex-wrap: nowrap;
   margin-top: 0;
+  margin-left: auto;
+  align-items: center;
+}
+
+.contact-page .nav-button,
+.contact-page .auth-button {
+  white-space: nowrap;
+  padding: 8px 12px;
+  font-size: 14px;
 }
 
 .contact-page .main-nav-buttons .nav-button.active,
@@ -27,6 +43,23 @@
 
 .contact-intro {
   padding-top: 0;
+}
+
+.success-message {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 500;
+}
+
+.success-message i {
+  font-size: 18px;
 }
 
 .contact-form-container {
@@ -79,10 +112,10 @@
   filter: brightness(0.96);
 }
 
-.main-nav-buttons,
-.auth-buttons-group {
-  display: flex;
-  flex-wrap: wrap;
+.contact-page .main-nav-buttons,
+  .contact-page .auth-buttons-group {
+    display: flex;
+    flex-wrap: nowrap;
   gap: 10px;
 }
 
