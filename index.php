@@ -135,7 +135,7 @@ function renderProductStars(float $rating): string {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BuyEase Pc</title>
+    <title>BuyEase 2Pc</title>
 
     <link
       rel="stylesheet"
