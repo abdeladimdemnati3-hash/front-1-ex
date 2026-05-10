@@ -52,13 +52,19 @@ if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
     }
 }
 
-// Sanitize image name before saving
+
 $newImage = basename($newImage);
 if (empty($newImage)) {
     $newImage = 'default.png';
 }
 
-// Update database - try both column names to ensure it works
+
+$imagePath = __DIR__ . '/../img/' . $newImage;
+if ($newImage !== 'default.png' && (!file_exists($imagePath) || !is_file($imagePath))) {
+    $newImage = $currentImage; // Keep the old image if new one doesn't exist
+}
+
+
 try {
     $updateSql = "UPDATE users SET NOM = ?, image = ? WHERE EMAIL = ?";
     $updateStmt = $pdo->prepare($updateSql);
@@ -68,13 +74,13 @@ try {
         throw new Exception("Database update failed");
     }
 } catch (Exception $e) {
-    // Fallback: try with lowercase email
+    
     $updateSql = "UPDATE users SET NOM = ?, image = ? WHERE email = ?";
     $updateStmt = $pdo->prepare($updateSql);
     $updateStmt->execute([$newName, $newImage, $currentEmail]);
 }
 
-// Update session with both upper and lowercase keys for compatibility
+
 $_SESSION['user']['NOM'] = $newName;
 $_SESSION['user']['nom'] = $newName;
 $_SESSION['user']['image'] = $newImage;

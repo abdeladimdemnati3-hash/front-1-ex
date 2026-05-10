@@ -12,7 +12,7 @@ $userName = $currentUser['NOM'] ?? $currentUser['nom'] ?? 'User';
 $userEmail = $currentUser['EMAIL'] ?? $currentUser['email'] ?? '';
 $userImage = $currentUser['image'] ?? $currentUser['IMAGE'] ?? 'default.png';
 
-// Sanitize image name
+
 $userImage = basename($userImage);
 if (empty($userImage) || $userImage === '') {
     $userImage = 'default.png';
@@ -45,10 +45,16 @@ foreach ($cartItems as $item) {
 $cartStatus = $cartCount > 0 ? '(' . $cartCount . ' article(s))' : '(Vide)';
 $updated = isset($_GET['updated']);
 
-$avatarPath = '../img/' . basename($userImage);
-if (!is_file(__DIR__ . '/../img/' . basename($userImage))) {
-    $avatarPath = '../img/default.png';
+
+$userImage = basename($userImage);
+if (empty($userImage) || $userImage === '' || $userImage === 'default.png') {
+    $userImage = 'default.png';
 }
+
+
+$imagePath = __DIR__ . '/../img/' . $userImage;
+$hasAvatar = file_exists($imagePath) && is_file($imagePath);
+$avatarPath = $hasAvatar ? '../img/' . $userImage : '';
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -73,6 +79,14 @@ if (!is_file(__DIR__ . '/../img/' . basename($userImage))) {
       </nav>
 
       <div class="user-actions">
+        <a href="profile.php" class="account-avatar-link" aria-label="Voir le profile">
+          <?php if ($hasAvatar): ?>
+            <img src="<?= htmlspecialchars($avatarPath) ?>" alt="Photo de profile" class="header-avatar" width="42" height="42">
+          <?php else: ?>
+            <i class="fas fa-user header-avatar-placeholder" aria-hidden="true"></i>
+          <?php endif; ?>
+        </a>
+
         <div class="account-info">
           <span>Bienvenue</span>
           <a href="profile.php"><?= htmlspecialchars($userName) ?></a>
@@ -115,7 +129,13 @@ if (!is_file(__DIR__ . '/../img/' . basename($userImage))) {
 
       <div class="profile-card">
         <div class="avatar-wrap">
-          <img src="<?= htmlspecialchars($avatarPath) ?>" alt="Photo de profile" class="avatar">
+          <?php if ($hasAvatar): ?>
+            <img src="<?= htmlspecialchars($avatarPath) ?>" alt="Photo de profile" class="avatar">
+          <?php else: ?>
+            <div class="avatar avatar-placeholder">
+              <i class="fas fa-user" aria-hidden="true"></i>
+            </div>
+          <?php endif; ?>
         </div>
 
         <form action="../Backend/profile-update.php" method="POST" enctype="multipart/form-data" class="profile-form">

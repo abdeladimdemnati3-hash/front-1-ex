@@ -6,21 +6,21 @@
   display: flex;
   justify-content: flex-start;
   align-items: center;
-  gap: 8px;
+  gap: 16px;
   flex-wrap: nowrap;
   width: 100%;
 }
 
 .contact-page .main-nav-buttons {
   display: flex;
-  gap: 6px;
+  gap: 10px;
   flex-wrap: nowrap;
   align-items: center;
 }
 
 .contact-page .auth-buttons-group {
   display: flex;
-  gap: 6px;
+  gap: 10px;
   flex-wrap: nowrap;
   margin-top: 0;
   margin-left: auto;
@@ -30,8 +30,24 @@
 .contact-page .nav-button,
 .contact-page .auth-button {
   white-space: nowrap;
-  padding: 8px 12px;
-  font-size: 14px;
+  padding: 10px 16px;
+  font-size: 16px;
+}
+
+.contact-page .account-avatar-link {
+  width: 52px;
+  height: 52px;
+  min-width: 52px;
+  max-width: 52px;
+  flex-basis: 52px;
+}
+
+.contact-page .header-avatar {
+  transform: scale(1.18);
+}
+
+.contact-page .header-avatar-placeholder {
+  font-size: 24px;
 }
 
 .contact-page .main-nav-buttons .nav-button.active,

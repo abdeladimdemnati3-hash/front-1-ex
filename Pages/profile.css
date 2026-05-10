@@ -32,6 +32,14 @@
   background: #f3f7fd;
 }
 
+.avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0f6ddf;
+  font-size: 58px;
+}
+
 .profile-form {
   display: flex;
   flex-direction: column;

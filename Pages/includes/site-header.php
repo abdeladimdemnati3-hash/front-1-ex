@@ -7,15 +7,19 @@ $userEmail = $userEmail ?? null;
 $cartCount = $cartCount ?? 0;
 $cartStatus = $cartStatus ?? '(Vide)';
 $isAdmin = $isAdmin ?? false;
+$hasAvatar = $hasAvatar ?? false;
+$userImage = $userImage ?? '';
 $showSearch = $showSearch ?? false;
 $searchAction = $searchAction ?? ($rootPrefix . 'index.php');
 $searchValue = $searchValue ?? '';
 $accountLabel = $userName ?: ($userEmail ?: 'Mon compte');
+$accountUrl = $currentUser ? $rootPrefix . 'Pages/profile.php' : $rootPrefix . 'Backend/login/Login.php';
+$avatarPath = $hasAvatar ? $rootPrefix . 'img/' . $userImage : '';
 ?>
 <header class="header-top-row">
   <nav class="logo">
     <a href="<?= htmlspecialchars($rootPrefix) ?>index.php">
-      <img src="<?= htmlspecialchars($rootPrefix) ?>img/logo.eco.png" alt="BuyEase Logo" width="300" />
+      <img src="<?= htmlspecialchars($rootPrefix) ?>img/logo_pp.png" alt="BuyEase Logo" width="300" />
     </a>
   </nav>
 
@@ -35,6 +39,18 @@ $accountLabel = $userName ?: ($userEmail ?: 'Mon compte');
   <?php endif; ?>
 
   <div class="user-actions">
+    <a
+      href="<?= htmlspecialchars($accountUrl) ?>"
+      class="account-avatar-link"
+      aria-label="<?= $currentUser ? 'Voir le profile' : 'Se connecter' ?>"
+    >
+      <?php if ($hasAvatar): ?>
+        <img src="<?= htmlspecialchars($avatarPath) ?>" alt="Photo de profile" class="header-avatar" width="42" height="42">
+      <?php else: ?>
+        <i class="fas fa-user header-avatar-placeholder" aria-hidden="true"></i>
+      <?php endif; ?>
+    </a>
+
     <div class="account-info">
       <span>Bienvenue</span>
       <?php if ($currentUser): ?>

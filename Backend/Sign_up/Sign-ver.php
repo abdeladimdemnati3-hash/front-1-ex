@@ -10,13 +10,20 @@ if(empty($nom) || empty($email) || empty($mdp)){
     exit();
 }
 
-// image
 if(isset($_FILES['image']) && $_FILES['image']['error'] == 0){
     $image = $_FILES['image']['name'];
     $tmp = $_FILES['image']['tmp_name'];
 
-    $imageName = time() . "_" . $image;
-    move_uploaded_file($tmp, "../../img/" . $imageName);
+    $original = basename($image);
+    $ext = strtolower(pathinfo($original, PATHINFO_EXTENSION));
+    $allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+
+    if (in_array($ext, $allowed, true) && is_uploaded_file($tmp)) {
+        $imageName = time() . '_profile_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $original);
+        move_uploaded_file($tmp, "../../img/" . $imageName);
+    } else {
+        $imageName = "default.png";
+    }
 }else{
     $imageName = "default.png";
 }

@@ -1,10 +1,55 @@
-<?php $added = isset($_GET['added']); ?>
+<?php
+session_start();
+include "../config/db.php";
+
+$added = isset($_GET['added']);
+$currentUser = $_SESSION['user'] ?? null;
+$userName = $currentUser['NOM'] ?? $currentUser['nom'] ?? null;
+$userEmail = $currentUser['EMAIL'] ?? $currentUser['email'] ?? null;
+$userImage = $currentUser['image'] ?? $currentUser['IMAGE'] ?? 'default.png';
+$cartCount = 0;
+
+$userImage = basename($userImage);
+if (empty($userImage) || $userImage === '') {
+    $userImage = 'default.png';
+}
+
+$imagePath = __DIR__ . '/../img/' . $userImage;
+$hasAvatar = $currentUser && file_exists($imagePath) && is_file($imagePath);
+$avatarPath = $hasAvatar ? '../img/' . $userImage : '';
+
+if ($userEmail) {
+    $pdo->exec(
+        "CREATE TABLE IF NOT EXISTS cart_items (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          user_id INT NULL,
+          user_email VARCHAR(255) NOT NULL,
+          product_name VARCHAR(255) NOT NULL,
+          product_price DECIMAL(10,2) NOT NULL,
+          product_image VARCHAR(255) DEFAULT NULL,
+          quantity INT NOT NULL DEFAULT 1,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )"
+    );
+
+    $cartStmt = $pdo->prepare("SELECT quantity FROM cart_items WHERE user_email = ?");
+    $cartStmt->execute([$userEmail]);
+    $cartItems = $cartStmt->fetchAll(PDO::FETCH_ASSOC);
+
+    foreach ($cartItems as $item) {
+        $cartCount += (int)$item['quantity'];
+    }
+}
+
+$cartStatus = $cartCount > 0 ? '(' . $cartCount . ' article(s))' : '(Vide)';
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Produit PC - BuyEase</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root {
       --surface: #ffffff;
@@ -97,6 +142,39 @@
       border-radius: 8px;
     }
 
+    .account-avatar-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 42px;
+      min-width: 42px;
+      max-width: 42px;
+      flex: 0 0 42px;
+      aspect-ratio: 1 / 1;
+      border-radius: 50%;
+      border: 2px solid #e4edf8;
+      background: #ffffff;
+      box-shadow: 0 6px 14px rgba(15, 43, 76, 0.1);
+      overflow: hidden;
+      text-decoration: none;
+    }
+
+    .header-avatar {
+      width: 100%;
+      height: 100%;
+      min-width: 100%;
+      max-width: 100%;
+      display: block;
+      object-fit: cover;
+      object-position: center;
+    }
+
+    .header-avatar-placeholder {
+      color: var(--primary);
+      font-size: 20px;
+    }
+
     .account-info {
       display: flex;
       flex-direction: column;
@@ -111,8 +189,8 @@
 
     .cart-link {
       display: flex;
-      flex-direction: column;
       align-items: center;
+      gap: 10px;
       text-decoration: none;
       color: #333;
     }
@@ -138,6 +216,17 @@
       font-size: 16px;
       color: #007bff;
       font-weight: bold;
+    }
+
+    .cart-details {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.1;
+    }
+
+    .cart-status {
+      color: #5b6b7d;
+      font-size: 12px;
     }
 
     /* ===== PRODUIT ===== */
@@ -270,6 +359,98 @@
 
     .review-submit:hover { background-color: var(--primary-dark); }
 
+    .review-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 14px;
+    }
+
+    .review-heading h2 {
+      margin: 0 0 4px;
+      color: var(--primary);
+    }
+
+    .review-heading p {
+      margin: 0;
+      color: #5b6b7d;
+      font-weight: 600;
+    }
+
+    .review-stars,
+    .rating-picker label,
+    .review-item-header span {
+      color: #ff9f1c;
+      letter-spacing: 0;
+    }
+
+    .rating-picker {
+      display: inline-flex;
+      flex-direction: row-reverse;
+      gap: 4px;
+      margin-bottom: 10px;
+    }
+
+    .rating-picker input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .rating-picker label {
+      font-size: 28px;
+      cursor: pointer;
+      color: #c7d1dd;
+    }
+
+    .rating-picker input:checked ~ label,
+    .rating-picker label:hover,
+    .rating-picker label:hover ~ label {
+      color: #ff9f1c;
+    }
+
+    .review-message,
+    .review-login,
+    .review-empty {
+      margin: 10px 0;
+      color: #5b6b7d;
+      font-weight: 600;
+    }
+
+    .review-message.success {
+      color: #1c7b39;
+    }
+
+    .review-message.warning {
+      color: #9f5f09;
+    }
+
+    .reviews-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .review-item {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      background: #f9fbfd;
+    }
+
+    .review-item-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .review-item p {
+      margin: 8px 0 0;
+      line-height: 1.5;
+    }
+
     a:focus-visible,
     button:focus-visible,
     input:focus-visible,
@@ -379,6 +560,40 @@
           <button type="submit" class="search-button-simple">OK</button>
         </form>
 
+        <div class="user-actions">
+          <a
+            href="<?= $currentUser ? 'profile.php' : '../Backend/login/Login.php' ?>"
+            class="account-avatar-link"
+            aria-label="<?= $currentUser ? 'Voir le profile' : 'Se connecter' ?>"
+          >
+            <?php if ($hasAvatar): ?>
+              <img src="<?= htmlspecialchars($avatarPath) ?>" alt="Photo de profile" class="header-avatar" width="42" height="42">
+            <?php else: ?>
+              <i class="fas fa-user header-avatar-placeholder" aria-hidden="true"></i>
+            <?php endif; ?>
+          </a>
+
+          <div class="account-info">
+            <span>Bienvenue</span>
+            <?php if ($currentUser): ?>
+              <a href="profile.php"><?= htmlspecialchars($userName ?: $userEmail) ?></a>
+            <?php else: ?>
+              <a href="../Backend/login/Login.php">Identifiez-vous</a>
+            <?php endif; ?>
+          </div>
+
+          <a href="panier.php" class="cart-link">
+            <div class="cart-icon-container">
+              <i class="fas fa-shopping-cart" style="color: #007bff"></i>
+              <span class="cart-count"><?= (int)$cartCount ?></span>
+            </div>
+            <div class="cart-details">
+              <span class="cart-label">Panier</span>
+              <span class="cart-status"><?= htmlspecialchars($cartStatus) ?></span>
+            </div>
+          </a>
+        </div>
+
         
       </header>
 
@@ -408,7 +623,7 @@
             <input type="hidden" name="product_name" value="M100A - AMD RYZEN 5 3500X-RTX 5050 8Go">
             <input type="hidden" name="product_price" value="5149">
             <input type="hidden" name="product_image" value="M100A-–-AMD-RYZEN-5-3500X-RTX-5050-8Go-Setup-Game.webp">
-            <input type="hidden" name="redirect" value="../Pages/PC.php">
+            <input type="hidden" name="redirect" value="../Pages/panier.php">
             <input type="number" name="quantity" class="num" placeholder="Qte" min="1" value="1" required>
             <button type="submit" class="buy">Ajouter au panier</button>
           </form>
@@ -417,31 +632,10 @@
     </div>
   </main>
 
-  <main class="review-section">
-        <form action="#" method="post" class="review-form">
-          <h1 style=" text-align:center; color: #007bff">Product Reviews</h1>
-          <div style="align-items: center; text-align:center">
-            <h2>Votre note :</h2>
-          <label>
-            <input type="radio" name="rating" value="1" /> 1⭐
-          </label>
-          <label>
-            <input type="radio" name="rating" value="2" /> 2⭐
-          </label>
-          <label>
-            <input type="radio" name="rating" value="3" /> 3⭐
-          </label>
-          <label>
-            <input type="radio" name="rating" value="4" /> 4⭐
-          </label>
-          <label>
-            <input type="radio" name="rating" value="5" /> 5⭐
-          </label>
-
-          </div>
-          <h4 style="text-align: center; color:black ">Votre avis :</h4>
-          <textarea placeholder="Ecrire un commentaire..."></textarea><br /><br />
-          <div style="text-align: center;"><input type="submit" value="Envoyer" class="review-submit" /></div><br /><br />
-      </main>
+  <?php
+    $feedbackProductName = 'M100A - AMD RYZEN 5 3500X-RTX 5050 8Go';
+    $feedbackRedirect = '../Pages/PC.php';
+    require __DIR__ . '/includes/product-feedback-widget.php';
+  ?>
 </body>
 </html>

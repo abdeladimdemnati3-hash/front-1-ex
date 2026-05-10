@@ -86,6 +86,45 @@ body {
   padding: 10px 12px;
 }
 
+.account-avatar-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  max-width: 42px;
+  flex: 0 0 42px;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  border: 2px solid #e4edf8;
+  background: #ffffff;
+  box-shadow: 0 6px 14px rgba(15, 43, 76, 0.1);
+  overflow: hidden;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.account-avatar-link:hover {
+  transform: translateY(-1px);
+  border-color: var(--primary);
+  box-shadow: 0 8px 18px rgba(15, 109, 223, 0.16);
+}
+
+.header-avatar {
+  width: 100%;
+  height: 100%;
+  min-width: 100%;
+  max-width: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: center;
+}
+
+.header-avatar-placeholder {
+  color: var(--primary);
+  font-size: 20px;
+}
+
 .account-info {
   display: flex;
   flex-direction: column;
@@ -274,6 +313,23 @@ body > .main-container > nav,
   font-size: 1rem;
 }
 
+.product-rating-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 22px;
+  margin-bottom: 8px;
+  color: #5b6b7d;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.product-rating-stars {
+  color: #ff9f1c;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
 .price-tag {
   font-weight: 700;
   margin-bottom: 10px;
@@ -353,6 +409,18 @@ button.btn-sh {
 
 .btn-sh:hover {
   background: var(--primary-dark);
+}
+
+.btn-secondary {
+  width: 100%;
+  border-color: #d8e0ea;
+  color: var(--primary);
+  background: #ffffff;
+}
+
+.btn-secondary:hover {
+  color: #ffffff;
+  background: var(--primary);
 }
 
 .discount-label {
@@ -493,48 +561,49 @@ input:focus-visible {
     line-height: 1.6;
   }
 
-  .type-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+  .category-filter-form {
     margin: 0;
-    padding: 0;
   }
 
-  .type-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+  .category-select {
     width: 100%;
     padding: 14px 16px;
-    border-radius: 14px;
-    text-decoration: none;
+    border: 2px solid rgba(15, 109, 223, 0.2);
+    border-radius: 12px;
+    background: linear-gradient(135deg, #ffffff 0%, #f8faff 100%);
     color: var(--text);
-    background: #ffffff;
-    border: 1px solid rgba(15, 109, 223, 0.16);
     font-size: 15px;
     font-weight: 600;
-    transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+    font-family: inherit;
     cursor: pointer;
+    transition: all 0.3s ease;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230f6ddf' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    box-shadow: 0 4px 12px rgba(15, 109, 223, 0.08);
   }
 
-  .type-item:hover {
-    background: rgba(15, 109, 223, 0.1);
+  .category-select:hover {
     border-color: var(--primary);
-    color: var(--primary);
+    background: linear-gradient(135deg, #f8faff 0%, #ffffff 100%);
     transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(15, 109, 223, 0.15);
   }
 
-  .type-item.active {
-    background: var(--primary);
-    color: #fff;
+  .category-select:focus {
+    outline: none;
     border-color: var(--primary);
-    box-shadow: 0 12px 24px rgba(15, 109, 223, 0.18);
+    background: linear-gradient(135deg, #ffffff 0%, #f0f4ff 100%);
+    box-shadow: 0 0 0 3px rgba(15, 109, 223, 0.1), 0 6px 20px rgba(15, 109, 223, 0.15);
   }
 
-  .type-item i {
-    font-size: 14px;
-    color: inherit;
+  .category-select option {
+    padding: 12px;
+    background: #ffffff;
+    color: var(--text);
+    font-weight: 500;
   }
 @media (max-width: 1400px) {
   .products-grid {
@@ -589,16 +658,20 @@ input:focus-visible {
     padding-left: 0;
   }
 
+  .user-actions {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
   .type-sidebar {
     padding: 16px;
   }
 
-  .type-list {
-    gap: 2px;
-  }
-
-  .type-item {
-    padding: 10px 12px;
-    font-size: 0.9rem;
+  .category-select {
+    padding: 12px 14px;
+    font-size: 14px;
+    background-size: 14px;
+    background-position: right 10px center;
   }
 }

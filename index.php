@@ -11,6 +11,15 @@ $isAdmin = $typeAdmin === 'A';
 $cartCount = 0;
 $addedToCart = isset($_GET['added']);
 $userImage = $currentUser['image'] ?? $currentUser['IMAGE'] ?? 'default.png';
+$userImage = basename($userImage);
+
+if (empty($userImage) || $userImage === '') {
+  $userImage = 'default.png';
+}
+
+$imagePath = __DIR__ . '/img/' . $userImage;
+$hasAvatar = $currentUser && file_exists($imagePath) && is_file($imagePath);
+$avatarPath = $hasAvatar ? 'img/' . $userImage : '';
 
 $pdo->exec(
   "CREATE TABLE IF NOT EXISTS produits (
@@ -51,6 +60,30 @@ $productsStmt = $pdo->prepare($productsSql);
 $productsStmt->execute($productsParams);
 $products = $productsStmt->fetchAll(PDO::FETCH_ASSOC);
 $searchResultCount = count($products);
+$feedbackStats = [];
+
+$pdo->exec(
+  "CREATE TABLE IF NOT EXISTS product_feedback (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    product_key VARCHAR(32) NOT NULL,
+    product_name VARCHAR(255) NOT NULL,
+    user_email VARCHAR(255) NOT NULL,
+    user_name VARCHAR(255) NOT NULL,
+    rating TINYINT NOT NULL,
+    comment TEXT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_product_user (product_key, user_email)
+  )"
+);
+
+$feedbackStmt = $pdo->query("SELECT product_key, AVG(rating) AS avg_rating, COUNT(*) AS rating_count FROM product_feedback GROUP BY product_key");
+foreach ($feedbackStmt->fetchAll(PDO::FETCH_ASSOC) as $feedbackRow) {
+  $feedbackStats[$feedbackRow['product_key']] = [
+    'average' => (float)$feedbackRow['avg_rating'],
+    'count' => (int)$feedbackRow['rating_count'],
+  ];
+}
 
 if ($userEmail) {
   $pdo->exec(
@@ -85,6 +118,17 @@ function buildQuery(array $params): string {
     }));
 }
 
+function renderProductStars(float $rating): string {
+  $rounded = (int)round($rating);
+  $stars = '';
+
+  for ($i = 1; $i <= 5; $i++) {
+    $stars .= $i <= $rounded ? '★' : '☆';
+  }
+
+  return $stars;
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -104,7 +148,7 @@ function buildQuery(array $params): string {
       <header class="header-top-row">
         <nav class="logo">
           <a href="index.php">
-            <img src="img/logo.eco.png" alt="BuyEase Logo" width="300" />
+            <img src="img/logo_pp.png" alt="BuyEase Logo" width="300" />
           </a>
         </nav>
 
@@ -120,6 +164,18 @@ function buildQuery(array $params): string {
         </form>
 
         <div class="user-actions">
+          <a
+            href="<?= $currentUser ? 'Pages/profile.php' : 'Backend/login/Login.php' ?>"
+            class="account-avatar-link"
+            aria-label="<?= $currentUser ? 'Voir le profile' : 'Se connecter' ?>"
+          >
+            <?php if ($hasAvatar): ?>
+              <img src="<?= htmlspecialchars($avatarPath) ?>" alt="Photo de profile" class="header-avatar" width="42" height="42">
+            <?php else: ?>
+              <i class="fas fa-user header-avatar-placeholder" aria-hidden="true"></i>
+            <?php endif; ?>
+          </a>
+
           <div class="account-info">
             <span>Bienvenue</span>
             <?php if ($currentUser): ?>
@@ -183,29 +239,26 @@ function buildQuery(array $params): string {
           <aside class="type-sidebar">
             <h3>Catégories</h3>
             <p class="type-sidebar-note">Filtre vertical par type de produit.</p>
-            <div class="type-list">
-              <?php
-                $typeNames = [
-                  'all' => 'Tous les produits',
-                  'PC' => 'PC',
-                  'Laptop' => 'Laptop',
-                  'PC-Gamer' => 'PC Gamer',
-                  'CPU' => 'CPU',
-                  'GPU' => 'GPU',
-                ];
-              ?>
-              <?php foreach ($typeNames as $typeKey => $typeLabel): ?>
-                <a
-                  href="index.php?<?= buildQuery(['type' => $typeKey, 'q' => $search !== '' ? $search : null]) ?>"
-                  class="type-item <?= $typeFilter === $typeKey ? 'active' : '' ?>"
-                >
-                  <span><?= htmlspecialchars($typeLabel) ?></span>
-                  <?php if ($typeFilter === $typeKey): ?>
-                    <i class="fas fa-check"></i>
-                  <?php endif; ?>
-                </a>
-              <?php endforeach; ?>
-            </div>
+            <form action="index.php" method="GET" class="category-filter-form">
+              <input type="hidden" name="q" value="<?= htmlspecialchars($search) ?>">
+              <select name="type" class="category-select" onchange="this.form.submit()">
+                <?php
+                  $typeNames = [
+                    'all' => 'Tous les produits',
+                    'PC' => 'PC',
+                    'Laptop' => 'Laptop',
+                    'PC-Gamer' => 'PC Gamer',
+                    'CPU' => 'CPU',
+                    'GPU' => 'GPU',
+                  ];
+                ?>
+                <?php foreach ($typeNames as $typeKey => $typeLabel): ?>
+                  <option value="<?= htmlspecialchars($typeKey) ?>" <?= $typeFilter === $typeKey ? 'selected' : '' ?>>
+                    <?= htmlspecialchars($typeLabel) ?>
+                  </option>
+                <?php endforeach; ?>
+              </select>
+            </form>
           </aside>
 
           <div class="products-grid">
@@ -224,6 +277,10 @@ function buildQuery(array $params): string {
             <p class="empty-products">Aucun produit disponible pour le moment.</p>
           <?php else: ?>
             <?php foreach ($products as $product): ?>
+              <?php
+                $productKey = md5(strtolower($product['nom'] ?? ''));
+                $productFeedback = $feedbackStats[$productKey] ?? ['average' => 0, 'count' => 0];
+              ?>
               <div class="product-slot">
                 <div class="custom-card">
                   <?php if (!empty($product['image'])): ?>
@@ -241,9 +298,21 @@ function buildQuery(array $params): string {
                   <?php endif; ?>
 
                   <h5 class="card-title"><?= htmlspecialchars($product['nom']) ?></h5>
+                  <div class="product-rating-summary">
+                    <span class="product-rating-stars"><?= renderProductStars((float)$productFeedback['average']) ?></span>
+                    <span>
+                      <?php if ((int)$productFeedback['count'] > 0): ?>
+                        <?= number_format((float)$productFeedback['average'], 1) ?> (<?= (int)$productFeedback['count'] ?> avis)
+                      <?php else: ?>
+                        Aucun avis
+                      <?php endif; ?>
+                    </span>
+                  </div>
                   <div class="price-tag">
                     <?= number_format((float)$product['prix'], 2) ?> MAD
                   </div>
+
+                  <a class="btn-sh btn-secondary" href="Pages/product.php?id=<?= (int)$product['id'] ?>">Voir page</a>
 
                   <?php if ($currentUser): ?>
                     <form action="Backend/cart.php" method="POST" class="details-button add-cart-form">

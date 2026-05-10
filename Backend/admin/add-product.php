@@ -32,13 +32,11 @@ $pdo->exec(
 try {
 	$pdo->exec("ALTER TABLE produits ADD COLUMN IF NOT EXISTS type_product VARCHAR(100) DEFAULT 'General'");
 } catch (Exception $e) {
-	// ignore if column already exists or syntax unsupported
 }
 
 try {
 	$pdo->exec("ALTER TABLE produits ADD COLUMN product_type VARCHAR(100) DEFAULT 'General'");
 } catch (Exception $e) {
-	// Column may already exist; ignore error
 }
 
 $nom = trim($_POST['nom'] ?? '');
@@ -49,7 +47,6 @@ $errors = [];
 
 $allowedTypes = ['PC', 'Laptop', 'PC-Gamer', 'CPU', 'GPU', 'General'];
 
-// Validation
 if ($nom === '') {
 	$errors[] = 'Le nom du produit est obligatoire';
 }
@@ -71,7 +68,6 @@ if (!isset($_FILES['image']) || $_FILES['image']['error'] !== UPLOAD_ERR_OK) {
 	$errors[] = 'L\'image est obligatoire';
 }
 
-// Check image on POST
 if (!isset($_FILES['image']) || $_FILES['image']['error'] !== UPLOAD_ERR_OK) {
 	$_SESSION['product_errors'] = $errors;
 	header("Location: admin.php");
@@ -88,9 +84,9 @@ if ($tmp === '' || !is_uploaded_file($tmp)) {
 	exit();
 }
 
-// Check file extension
 $allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
 $ext = strtolower(pathinfo($image, PATHINFO_EXTENSION));
+
 if (!in_array($ext, $allowed, true)) {
 	$errors[] = 'Type d\'image non autorisé. Utilisez JPG, PNG, WEBP ou GIF';
 	$_SESSION['product_errors'] = $errors;
@@ -118,19 +114,25 @@ try {
 	$sql = "INSERT INTO produits (nom, prix, image, type_product) VALUES (?, ?, ?, ?)";
 	$stmt = $pdo->prepare($sql);
 	$stmt->execute([$nom, $prix, $imageName, $type]);
+
 	header("Location: admin.php?status=added");
 	exit();
+
 } catch (Exception $e) {
-	// Clean up uploaded file on database error
+
 	if (file_exists($imgPath)) {
 		@unlink($imgPath);
 	}
+
 	$errorMessage = $e->getMessage();
+
 	error_log("add-product.php error: " . $errorMessage);
+
 	$_SESSION['product_errors'] = [
 		'Erreur lors de l\'ajout du produit. Veuillez réessayer.',
 		'Détail: ' . $errorMessage
 	];
+
 	header("Location: admin.php");
 	exit();
 }

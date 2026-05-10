@@ -17,7 +17,7 @@ if (!$userEmail) {
     exit();
 }
 
-// Create orders table if not exists
+
 $pdo->exec(
     "CREATE TABLE IF NOT EXISTS orders (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -31,7 +31,7 @@ $pdo->exec(
     )"
 );
 
-// Create order items table
+
 $pdo->exec(
     "CREATE TABLE IF NOT EXISTS order_items (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -57,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
         exit();
     }
 
-    // Calculate total
+    
     $total = 0;
     foreach ($cartItems as $item) {
         $total += (float)$item['product_price'] * (int)$item['quantity'];
@@ -66,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
     try {
         $pdo->beginTransaction();
 
-        // Create order
+        
         $orderSql = "INSERT INTO orders (user_id, user_name, user_email, total_amount, order_status) 
                      VALUES (?, ?, ?, ?, 'Pending')";
         $orderStmt = $pdo->prepare($orderSql);
@@ -74,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
         
         $orderId = $pdo->lastInsertId();
 
-        // Add order items
+        
         $itemSql = "INSERT INTO order_items (order_id, product_name, product_price, quantity, subtotal) 
                     VALUES (?, ?, ?, ?, ?)";
         $itemStmt = $pdo->prepare($itemSql);
@@ -90,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
             ]);
         }
 
-        // Clear cart
+        
         $clearSql = "DELETE FROM cart_items WHERE user_email = ?";
         $clearStmt = $pdo->prepare($clearSql);
         $clearStmt->execute([$userEmail]);

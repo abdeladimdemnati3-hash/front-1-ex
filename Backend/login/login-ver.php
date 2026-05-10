@@ -10,14 +10,14 @@ if (empty($email) || empty($mdp)) {
     exit();
 }
 
-// Query to get user - try EMAIL first, then email
+
 $sql = "SELECT * FROM users WHERE EMAIL = ? OR email = ?";
 $stmt = $pdo->prepare($sql);
 $stmt->execute([$email, $email]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$user) {
-    // Try case-insensitive search as last resort
+    
     $sql = "SELECT * FROM users WHERE LOWER(EMAIL) = ? OR LOWER(email) = ?";
     $stmt = $pdo->prepare($sql);
     $stmt->execute([strtolower($email), strtolower($email)]);
@@ -25,24 +25,29 @@ if (!$user) {
 }
 
 if ($user && $mdp == $user['mdp']) {
-    // Get the image - handle both column name variations
+    
     $image = $user['image'] ?? $user['IMAGE'] ?? null;
     
-    // Ensure image is set and valid
+    
     if (empty($image)) {
         $image = 'default.png';
     } else {
-        // Sanitize: remove path traversal attempts
+       
         $image = basename($image);
         if (empty($image)) {
             $image = 'default.png';
         }
+       
+        $imagePath = __DIR__ . '/../../img/' . $image;
+        if (!file_exists($imagePath) || !is_file($imagePath)) {
+            $image = 'default.png';
+        }
     }
     
-    // Get email - use whichever is available
+    
     $userEmail = $user['EMAIL'] ?? $user['email'] ?? $email;
     
-    // Store user in session with comprehensive key mapping
+    
     $_SESSION['user'] = [
         'NOM' => $user['NOM'] ?? $user['nom'] ?? '',
         'nom' => $user['NOM'] ?? $user['nom'] ?? '',
@@ -55,7 +60,7 @@ if ($user && $mdp == $user['mdp']) {
         'IMAGE' => $image
     ];
 
-    // Send all users to the homepage
+    
     header("Location: ../../index.php");
     exit();
 

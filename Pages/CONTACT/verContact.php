@@ -11,13 +11,13 @@ if(isset($_POST['nom'], $_POST['email'], $_POST['message'])){
         exit();
     }
 
-    // Validate email
+
     if(!filter_var($email, FILTER_VALIDATE_EMAIL)){
         echo "Adresse email invalide";
         exit();
     }
 
-    // Create contact table if not exists
+    
     $pdo->exec(
         "CREATE TABLE IF NOT EXISTS contact (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -32,7 +32,7 @@ if(isset($_POST['nom'], $_POST['email'], $_POST['message'])){
     try {
         $pdo->exec("ALTER TABLE contact ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
     } catch (Exception $e) {
-        // ignore if column already exists or unsupported syntax
+        
     }
 
     $sql = "INSERT INTO contact (nom, email, message) VALUES (?, ?, ?)";

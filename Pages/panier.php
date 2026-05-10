@@ -10,12 +10,22 @@ if (!$currentUser) {
 
 $userName = $currentUser['NOM'] ?? $currentUser['nom'] ?? 'User';
 $userEmail = $currentUser['EMAIL'] ?? $currentUser['email'] ?? null;
+$userImage = $currentUser['image'] ?? $currentUser['IMAGE'] ?? 'default.png';
 $typeAdmin = $currentUser['type_admin'] ?? $currentUser['TYPE_ADMIN'] ?? 'N';
 $isAdmin = $typeAdmin === 'A';
 $addedToCart = isset($_GET['added']);
 $removedFromCart = isset($_GET['removed']);
 $cartCount = 0;
 $total = 0;
+$userImage = basename($userImage);
+
+if (empty($userImage) || $userImage === '') {
+    $userImage = 'default.png';
+}
+
+$imagePath = __DIR__ . '/../img/' . $userImage;
+$hasAvatar = file_exists($imagePath) && is_file($imagePath);
+$avatarPath = $hasAvatar ? '../img/' . $userImage : '';
 
 $pdo->exec(
     "CREATE TABLE IF NOT EXISTS cart_items (
@@ -67,6 +77,14 @@ $cartStatus = $cartCount > 0 ? '(' . $cartCount . ' article(s))' : '(Vide)';
       </nav>
 
       <div class="user-actions">
+        <a href="profile.php" class="account-avatar-link" aria-label="Voir le profile">
+          <?php if ($hasAvatar): ?>
+            <img src="<?= htmlspecialchars($avatarPath) ?>" alt="Photo de profile" class="header-avatar" width="42" height="42">
+          <?php else: ?>
+            <i class="fas fa-user header-avatar-placeholder" aria-hidden="true"></i>
+          <?php endif; ?>
+        </a>
+
         <div class="account-info">
           <span>Bienvenue</span>
           <a href="profile.php"><?= htmlspecialchars($userName) ?></a>

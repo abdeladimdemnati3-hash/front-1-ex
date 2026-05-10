@@ -16,7 +16,6 @@ if ($typeAdmin !== 'A') {
 
 $nomAdmin = $_SESSION['user']['NOM'] ?? $_SESSION['user']['nom'] ?? 'Admin';
 
-// Create contact table if not exists
 $pdo->exec(
     "CREATE TABLE IF NOT EXISTS contact (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -31,13 +30,11 @@ $pdo->exec(
 try {
     $pdo->exec("ALTER TABLE contact ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
 } catch (Exception $e) {
-    // ignore if column already exists or unsupported syntax
 }
 
 try {
     $pdo->exec("ALTER TABLE contact ADD COLUMN status ENUM('unread','read','replied') DEFAULT 'unread'");
 } catch (Exception $e) {
-    // ignore if column already exists or unsupported syntax
 }
 
 $pdo->exec(
@@ -56,13 +53,11 @@ $pdo->exec(
 try {
     $pdo->exec("ALTER TABLE orders ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
 } catch (Exception $e) {
-    // ignore if column already exists
 }
 
 try {
     $pdo->exec("ALTER TABLE orders ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
 } catch (Exception $e) {
-    // ignore if column already exists
 }
 
 $pdo->exec(
@@ -91,10 +86,8 @@ $pdo->exec(
 try {
     $pdo->exec("ALTER TABLE produits ADD COLUMN IF NOT EXISTS type_product VARCHAR(100) DEFAULT 'General'");
 } catch (Exception $e) {
-    // ignore if column already exists or syntax unsupported
 }
 
-// Handle contact message status update
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_contact_status'])) {
     $contactId = (int)$_POST['contact_id'];
     $newStatus = $_POST['contact_status'];
@@ -103,7 +96,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_contact_status
     $updateStmt->execute([$newStatus, $contactId]);
 }
 
-// Handle contact message deletion
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_contact'])) {
     $contactId = (int)$_POST['contact_id'];
     $deleteSql = "DELETE FROM contact WHERE id = ?";
@@ -111,7 +103,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_contact'])) {
     $deleteStmt->execute([$contactId]);
 }
 
-// Handle order status update
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_order_status'])) {
     $orderId = (int)$_POST['order_id'];
     $newStatus = $_POST['order_status'];
@@ -120,14 +111,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_order_status']
     $updateStmt->execute([$newStatus, $orderId]);
 }
 
-// Determine view mode
 $view = $_GET['view'] ?? 'products';
 
 $search = $_GET['search'] ?? '';
 $status = $_GET['status'] ?? '';
 
 if ($view === 'orders') {
-    // Get all orders with safe handling
     try {
         $ordersSql = "SELECT * FROM orders ORDER BY created_at DESC";
         $ordersStmt = $pdo->prepare($ordersSql);
@@ -137,13 +126,11 @@ if ($view === 'orders') {
         $orders = [];
     }
 } elseif ($view === 'contacts') {
-    // Get all contact messages
     $contactsSql = "SELECT * FROM contact ORDER BY created_at DESC";
     $contactsStmt = $pdo->prepare($contactsSql);
     $contactsStmt->execute();
     $contacts = $contactsStmt->fetchAll(PDO::FETCH_ASSOC);
 } else {
-    // Get products
     if ($search) {
         $sql = "SELECT *, COALESCE(product_type, type_product) AS product_type FROM produits 
                 WHERE id LIKE ? 
