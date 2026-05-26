@@ -88,6 +88,11 @@ try {
 } catch (Exception $e) {
 }
 
+try {
+    $pdo->exec("ALTER TABLE produits ADD COLUMN product_type VARCHAR(100) DEFAULT 'General'");
+} catch (Exception $e) {
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_contact_status'])) {
     $contactId = (int)$_POST['contact_id'];
     $newStatus = $_POST['contact_status'];
@@ -137,7 +142,7 @@ if ($view === 'orders') {
                 OR nom LIKE ? 
                 OR prix LIKE ? 
                 OR image LIKE ? ";
-        
+
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
             "%$search%",
@@ -146,7 +151,7 @@ if ($view === 'orders') {
             "%$search%"
         ]);
     } else {
-        $sql="SELECT *, COALESCE(product_type, type_product) AS product_type FROM produits";
+        $sql = "SELECT *, COALESCE(product_type, type_product) AS product_type FROM produits";
         $stmt = $pdo->prepare($sql);
         $stmt->execute();
     }
@@ -155,657 +160,882 @@ if ($view === 'orders') {
 }
 ?>
 <!DOCTYPE html>
-<html>
+<html lang="fr">
+
 <head>
-    <title>Admin Panel</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - BuyEase</title>
 
     <style>
+        :root {
+            --bg: #f5f7fb;
+            --panel: #ffffff;
+            --panel-soft: #f8fbff;
+            --text: #1d2939;
+            --muted: #667085;
+            --line: #d9e2ef;
+            --primary: #0f6ddf;
+            --primary-dark: #0a56b2;
+            --success: #16834d;
+            --warning: #b76a00;
+            --danger: #d92d20;
+            --shadow: 0 10px 24px rgba(16, 24, 40, 0.07);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: Arial;
-            background: #f4f6f9;
-            text-align: center;
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--text);
+            background:
+                linear-gradient(135deg, rgba(15, 109, 223, 0.08), transparent 28%),
+                linear-gradient(315deg, rgba(22, 131, 77, 0.07), transparent 24%),
+                var(--bg);
+        }
+
+        a {
+            color: inherit;
+        }
+
+        button,
+        input,
+        select {
+            font: inherit;
+        }
+
+        h1,
+        h2,
+        h3,
+        p {
+            margin-top: 0;
+        }
+
+        .admin-shell {
+            width: min(1180px, calc(100% - 28px));
+            margin: 0 auto;
+            padding: 18px 0 30px;
+        }
+
+        .admin-hero {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 14px;
+            align-items: center;
+            padding: 16px 18px;
+            border: 1px solid rgba(15, 109, 223, 0.14);
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.92);
+            box-shadow: var(--shadow);
+        }
+
+        .admin-eyebrow {
+            margin: 0 0 4px;
+            color: var(--primary);
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0;
+            text-transform: uppercase;
         }
 
         h1 {
-            color: #007bff;
+            margin-bottom: 5px;
+            font-size: clamp(22px, 3vw, 32px);
+            line-height: 1.1;
+            letter-spacing: 0;
         }
 
-        h2 {
-            margin-top: 30px;
-            color: #333;
+        .admin-subtitle {
+            margin: 0;
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.45;
         }
 
-        form {
-            margin: 20px;
-        }
-
-        input, button, select {
-            padding: 8px;
-            margin: 5px;
-        }
-
-        button {
-            background: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background: #0056b3;
-        }
-
-        .container {
-            max-width: 1600px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: repeat(5, minmax(220px, 1fr));
-            gap: 58px;
-            padding: 0 12px 24px;
-            align-items: stretch;
-            margin-top: 20px;
+        .top-links,
+        .view-tabs {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
         }
 
         .top-links {
-            margin: 20px 0;
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            flex-wrap: wrap;
+            justify-content: flex-end;
         }
 
-        .top-links a {
-            display: inline-block;
-            padding: 10px 16px;
-            border-radius: 999px;
-            background: #1f2937;
-            color: white;
-            text-decoration: none;
-        }
-
-        .top-links a:hover {
-            background: #007bff;
-        }
-
-        .view-tabs {
-            margin: 20px 0;
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .view-tabs a {
-            display: inline-block;
-            padding: 10px 20px;
-            border-radius: 5px;
-            background: #e0e0e0;
-            color: #333;
-            text-decoration: none;
-            cursor: pointer;
-        }
-
-        .view-tabs a.active {
-            background: #007bff;
-            color: white;
-        }
-
-        .view-tabs a:hover {
-            background: #0056b3;
-            color: white;
-        }
-
-        .card {
-            background: #ffffff;
-            width: 100%;
-            min-height: 340px;
-            padding: 18px;
-            border-radius: 22px;
-            border: 1px solid rgba(15, 23, 42, 0.08);
-            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
-            transition: transform 0.25s ease, box-shadow 0.25s ease;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            overflow: hidden;
-        }
-
-        .card:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 24px 45px rgba(15, 23, 42, 0.14);
-        }
-
-        img {
-            width: 100%;
-            height: 160px;
-            border-radius: 18px;
-            object-fit: cover;
-            margin-bottom: 16px;
-        }
-
-        .card h3 {
-            margin: 0 0 10px;
-            font-size: 1.3rem;
-            letter-spacing: 0.02em;
-            color: #111827;
-        }
-
-        .card p {
-            margin: 8px 0;
-            color: #4b5563;
-            line-height: 1.5;
-        }
-
-        .card p strong {
-            color: #111827;
-        }
-
-        .actions {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 20px;
-            align-items: center;
-        }
-
-        .actions a,
-        .actions button {
+        .top-links a,
+        .view-tabs a,
+        button,
+        .edit {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            flex: 1 1 130px;
-            min-width: 130px;
-            max-width: 100%;
-            padding: 12px 18px;
-            border-radius: 999px;
-            text-decoration: none;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 700;
-            transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+            min-height: 42px;
+            padding: 0 20px;
             border: 1px solid transparent;
-            background: #fff5f5;
-            color: #b91c1c;
-            box-shadow: inset 0 0 0 1px rgba(220, 38, 38, 0.12);
+            border-radius: 10px;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: 900;
+            cursor: pointer;
+            transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+        }
+
+        button {
+            color: #fff;
+            background: var(--primary);
+        }
+
+        .admin-top-btn {
+            color: #fff;
+            min-width: 78px;
+            height: 38px;
+            padding: 0 13px;
+            border-radius: 15px;
+            font-size: 16px;
+            line-height: 1;
+            box-shadow: 0 8px 18px rgba(16, 24, 40, 0.10);
+        }
+
+        .admin-home-btn {
+            background: #2c3e50;
+            border-color: #2c3e50;
+        }
+
+        .admin-profile-btn {
+            min-width: 82px;
+            background: #355c9b;
+            border-color: #355c9b;
+        }
+
+        .admin-logout-btn {
+            min-width: 82px;
+            background: #b73a3a;
+            border-color: #b73a3a;
+        }
+
+        .top-links a:hover,
+        .view-tabs a:hover,
+        button:hover,
+        .edit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 22px rgba(16, 24, 40, 0.14);
+        }
+
+        .admin-home-btn:hover,
+        button:hover {
+            background: #1f3245;
+            border-color: #1f3245;
+        }
+
+        .admin-profile-btn:hover {
+            background: #2b4f8c;
+            border-color: #2b4f8c;
+        }
+
+        .admin-logout-btn:hover {
+            background: #9f3030;
+            border-color: #9f3030;
+        }
+
+        .view-tabs {
+            margin: 12px 0;
+            padding: 6px;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.75);
+        }
+
+        .view-tabs a {
+            flex: 1 1 160px;
+            color: var(--muted);
+            background: transparent;
+        }
+
+        .view-tabs a.active {
+            color: #fff;
+            background: var(--primary);
+            box-shadow: 0 10px 22px rgba(15, 109, 223, 0.18);
+        }
+
+        .flash {
+            display: block;
+            width: fit-content;
+            max-width: 100%;
+            margin: 10px 0;
+            padding: 10px 12px;
+            border-radius: 10px;
+            background: #ecfdf3;
+            border: 1px solid #bee8cf;
+            color: var(--success);
+            font-weight: 800;
+        }
+
+        .error-flash {
+            background: #fff1f0;
+            border-color: #ffd0cc;
+            color: var(--danger);
+        }
+
+        .error-flash p {
+            margin: 4px 0;
+        }
+
+        .products-layout {
+            display: grid;
+            grid-template-columns: minmax(250px, 320px) 1fr;
+            gap: 14px;
+            align-items: start;
+        }
+
+        .panel,
+        .orders-section,
+        .contacts-section {
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+        }
+
+        .panel-header {
+            padding: 14px 14px 0;
+        }
+
+        .panel-header h2 {
+            margin-bottom: 4px;
+            font-size: 18px;
+        }
+
+        .panel-header p {
+            margin-bottom: 0;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .product-form,
+        .search-form {
+            display: grid;
+            gap: 9px;
+            padding: 14px;
+        }
+
+        .field {
+            display: grid;
+            gap: 5px;
+        }
+
+        .field label {
+            color: #344054;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        input,
+        select {
+            width: 100%;
+            min-height: 38px;
+            padding: 8px 10px;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            background: #fff;
+            color: var(--text);
+            outline: none;
+            transition: border-color 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        input[type="file"] {
+            padding: 7px;
+            background: var(--panel-soft);
+        }
+
+        input:focus,
+        select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(15, 109, 223, 0.12);
+        }
+
+        .search-row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 8px;
+        }
+
+        .search-tools {
+            margin-bottom: 12px;
+        }
+
+        .products-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            align-items: end;
+            margin-bottom: 10px;
+        }
+
+        .products-head h2 {
+            margin-bottom: 3px;
+            font-size: 20px;
+        }
+
+        .products-count {
+            margin: 0;
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .card {
+            min-width: 0;
+            padding: 10px;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            background: #fff;
+            box-shadow: 0 8px 18px rgba(16, 24, 40, 0.06);
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px rgba(16, 24, 40, 0.10);
+        }
+
+        .product-image {
+            display: block;
+            width: 100%;
+            aspect-ratio: 16 / 10;
+            height: auto;
+            border-radius: 9px;
+            object-fit: cover;
+            background: var(--panel-soft);
+            border: 1px solid #eef2f7;
+        }
+
+        .card-body {
+            display: grid;
+            gap: 7px;
+            padding-top: 10px;
+        }
+
+        .product-title {
+            margin: 0;
+            min-height: 38px;
+            color: #101828;
+            font-size: 14px;
+            line-height: 1.35;
+        }
+
+        .product-meta {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .type-pill {
+            max-width: 55%;
+            padding: 4px 8px;
+            border-radius: 999px;
+            color: var(--primary-dark);
+            background: #eaf3ff;
+            font-size: 11px;
+            font-weight: 900;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
 
-        .actions a:hover,
-        .actions button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 14px 24px rgba(15, 23, 42, 0.12);
-            background: #fde8e8;
+        .price {
+            color: #101828;
+            font-size: 14px;
+            font-weight: 900;
+            white-space: nowrap;
         }
 
-        .actions a:focus,
-        .actions button:focus {
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.22);
+        .actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 4px;
         }
 
-        .edit,
-        .delete {
-            background: #fff5f5;
-            color: #b91c1c;
-            border-color: rgba(220, 38, 38, 0.18);
+        .actions form {
+            margin: 0;
         }
 
-        @media (max-width: 1400px) {
-            .container {
-                grid-template-columns: repeat(4, minmax(220px, 1fr));
-            }
+        .actions a,
+        .actions button {
+            width: 100%;
+            min-height: 34px;
+            padding: 0 10px;
+            border-radius: 8px;
+            font-size: 13px;
         }
 
-        @media (max-width: 1080px) {
-            .container {
-                grid-template-columns: repeat(3, minmax(220px, 1fr));
-            }
+        .edit {
+            color: var(--primary-dark);
+            background: #edf5ff;
+            border-color: #cfe5ff;
         }
 
-        @media (max-width: 820px) {
-            .container {
-                grid-template-columns: repeat(2, minmax(220px, 1fr));
-            }
+        .edit:hover {
+            color: #fff;
+            background: var(--primary);
+            border-color: var(--primary);
         }
 
-        @media (max-width: 620px) {
-            .container {
-                grid-template-columns: 1fr;
-            }
+        .delete,
+        .delete-btn {
+            color: #fff;
+            background: var(--danger);
         }
 
-        .flash {
-            display: inline-block;
-            margin: 12px 0;
-            padding: 10px 14px;
-            border-radius: 10px;
-            background: #eaf8ef;
-            border: 1px solid #c8ebd2;
-            color: #1c7b39;
-        }
-
-        .error-flash {
-            background: #fef1f0;
-            border-color: #f9d4ce;
-            color: #c41e3a;
-        }
-
-        .error-flash p {
-            margin: 5px 0;
-        }
-
-        /* Orders Table Styles */
-        .orders-section {
-            margin: 20px auto;
-            max-width: 1200px;
-            background: white;
+        .empty-state {
+            grid-column: 1 / -1;
             padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border: 1px dashed var(--line);
+            border-radius: 12px;
+            color: var(--muted);
+            background: var(--panel-soft);
+            text-align: center;
+            font-weight: 700;
+        }
+
+        .orders-section,
+        .contacts-section {
+            padding: 14px;
+            overflow-x: auto;
         }
 
         .orders-table {
             width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-
-        .orders-table thead {
-            background: #007bff;
-            color: white;
+            min-width: 820px;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-top: 10px;
         }
 
         .orders-table th,
         .orders-table td {
-            padding: 12px;
+            padding: 10px;
             text-align: left;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid #edf1f7;
+        }
+
+        .orders-table th {
+            color: #475467;
+            background: var(--panel-soft);
+            font-size: 13px;
+            text-transform: uppercase;
         }
 
         .orders-table tbody tr:hover {
-            background: #f5f5f5;
+            background: #fbfdff;
         }
 
-        .orders-table .status-pending {
-            color: #ff9800;
-            font-weight: bold;
+        .status-pending,
+        .status-confirmed,
+        .status-shipped,
+        .status-delivered,
+        .status-cancelled,
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            min-height: 24px;
+            padding: 0 8px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 900;
         }
 
-        .orders-table .status-confirmed {
-            color: #4caf50;
-            font-weight: bold;
+        .status-pending,
+        .status-unread {
+            color: var(--warning);
+            background: #fff7e8;
         }
 
-        .orders-table .status-shipped {
-            color: #2196f3;
-            font-weight: bold;
+        .status-confirmed,
+        .status-delivered,
+        .status-read {
+            color: var(--success);
+            background: #ecfdf3;
         }
 
-        .orders-table .status-delivered {
-            color: #4caf50;
-            font-weight: bold;
+        .status-shipped,
+        .status-replied {
+            color: var(--primary-dark);
+            background: #eaf3ff;
         }
 
-        .orders-table .status-cancelled {
-            color: #f44336;
-            font-weight: bold;
+        .status-cancelled {
+            color: var(--danger);
+            background: #fff1f0;
         }
 
         .status-select {
-            padding: 5px;
-            border-radius: 5px;
-            border: 1px solid #ddd;
-        }
-
-        .order-actions {
-            display: flex;
-            gap: 5px;
-        }
-
-        .order-actions button {
-            padding: 5px 10px;
-            font-size: 12px;
-        }
-
-        /* Contacts Section Styles */
-        .contacts-section {
-            margin: 20px auto;
-            max-width: 1000px;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            min-height: 34px;
+            padding: 6px 8px;
+            font-size: 13px;
         }
 
         .contacts-list {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
+            display: grid;
+            gap: 10px;
+            margin-top: 10px;
         }
 
         .contact-card {
-            border: 1px solid #d8e0ea;
+            border: 1px solid var(--line);
             border-radius: 12px;
-            background: #f9fbfd;
+            background: var(--panel-soft);
             overflow: hidden;
-            transition: all 0.3s ease;
         }
 
-        .contact-card:hover {
-            box-shadow: 0 4px 12px rgba(15, 109, 223, 0.1);
-            border-color: #0f6ddf;
-        }
-
-        .contact-card.status-unread {
-            border-left: 4px solid #ff9800;
-        }
-
-        .contact-card.status-read {
-            border-left: 4px solid #4caf50;
-        }
-
-        .contact-card.status-replied {
-            border-left: 4px solid #2196f3;
-        }
-
-        .contact-header {
+        .contact-header,
+        .contact-actions {
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
-            padding: 16px;
-            background: white;
-            border-bottom: 1px solid #e7edf5;
+            align-items: center;
+            gap: 10px;
             flex-wrap: wrap;
-            gap: 12px;
+            padding: 10px;
+            background: #fff;
         }
 
         .contact-info h3 {
-            margin: 0 0 6px;
-            color: #1e293b;
+            margin-bottom: 6px;
             font-size: 16px;
         }
 
         .contact-email,
         .contact-date {
             margin: 4px 0;
-            color: #5b6b7d;
+            color: var(--muted);
             font-size: 13px;
         }
 
-        .contact-email i,
-        .contact-date i {
-            margin-right: 6px;
-            width: 14px;
-        }
-
-        .contact-status {
-            flex-shrink: 0;
-        }
-
         .contact-body {
-            padding: 16px;
+            padding: 14px;
         }
 
         .contact-message {
             margin: 0;
-            color: #1e293b;
-            line-height: 1.5;
+            color: #344054;
+            line-height: 1.6;
             white-space: pre-wrap;
         }
 
         .contact-actions {
-            padding: 16px;
-            background: white;
-            border-top: 1px solid #e7edf5;
-            display: flex;
-            gap: 12px;
-            align-items: center;
-            flex-wrap: wrap;
+            justify-content: flex-start;
+            border-top: 1px solid var(--line);
         }
 
-        .status-select {
-            padding: 6px 10px;
-            border-radius: 6px;
-            border: 1px solid #ddd;
-            font-size: 13px;
+        .contact-actions form {
+            margin: 0;
         }
 
-        .delete-btn {
-            background: #dc3545;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 500;
+        @media (max-width: 1180px) {
+            .products-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .container {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
         }
 
-        .delete-btn:hover {
-            background: #c82333;
-        }
+        @media (max-width: 760px) {
+            .admin-shell {
+                width: min(100% - 18px, 1180px);
+                padding-top: 10px;
+            }
 
-        .order-details-link {
-            color: #007bff;
-            cursor: pointer;
-            text-decoration: underline;
-        }
+            .admin-hero,
+            .search-row {
+                grid-template-columns: 1fr;
+            }
 
-        .order-details-link:hover {
-            color: #0056b3;
+            .top-links {
+                justify-content: flex-start;
+            }
+
+            .container {
+                grid-template-columns: 1fr;
+            }
+
+            .actions {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 
 <body>
+    <main class="admin-shell">
 
-<h1>Salut Admin <?= htmlspecialchars($nomAdmin) ?></h1>
-
-<div class="top-links">
-    <a href="../../index.php">Home</a>
-    <a href="../../Pages/profile.php">Profile</a>
-    <a href="../login/logout.php">Logout</a>
-</div>
-
-<div class="view-tabs">
-    <a href="?view=products" class="<?= ($view === 'products') ? 'active' : '' ?>">Produits</a>
-    <a href="?view=orders" class="<?= ($view === 'orders') ? 'active' : '' ?>">Commandes</a>
-    <a href="?view=contacts" class="<?= ($view === 'contacts') ? 'active' : '' ?>">Messages</a>
-</div>
-
-<?php if ($status === 'added'): ?>
-    <p class="flash">Produit ajoute avec succes.</p>
-<?php elseif ($status === 'updated'): ?>
-    <p class="flash">Produit mis a jour avec succes.</p>
-<?php elseif ($status === 'deleted'): ?>
-    <p class="flash">Produit supprime avec succes.</p>
-<?php endif; ?>
-
-<?php if (!empty($_SESSION['product_errors'])): ?>
-    <div class="flash error-flash">
-        <?php foreach ($_SESSION['product_errors'] as $error): ?>
-            <p>❌ <?= htmlspecialchars($error) ?></p>
-        <?php endforeach; ?>
-    </div>
-    <?php unset($_SESSION['product_errors']); ?>
-<?php endif; ?>
-
-<?php if ($view === 'products'): ?>
-    <!-- PRODUCTS SECTION -->
-    <h2>Ajouter Produit</h2>
-
-    <form action="add-product.php" method="POST" enctype="multipart/form-data">
-        <input type="text" name="nom" placeholder="Nom" required><br>
-        <input type="text" name="prix" placeholder="Prix" required><br>
-        <select name="type" required>
-            <option value="PC">PC</option>
-            <option value="Laptop">Laptop</option>
-            <option value="PC-Gamer">PC-Gamer</option>
-            <option value="CPU">CPU</option>
-            <option value="GPU">GPU</option>
-        </select><br>
-        <input type="file" name="image" required><br>
-        <button type="submit">Ajouter</button>
-    </form>
-
-    <hr>
-
-    <form method="GET">
-        <input type="hidden" name="view" value="products">
-        <input type="text" name="search" placeholder="Rechercher..." value="<?= htmlspecialchars($search) ?>">
-        <button type="submit">Rechercher</button>
-    </form>
-
-    <h2>Produits</h2>
-
-    <div class="container">
-
-    <?php foreach ($products as $p): ?>
-        <div class="card">
-
-            <img src="../../img/<?= htmlspecialchars($p['image']) ?>" alt="<?= htmlspecialchars($p['nom']) ?>">
-
-            <h3><?= htmlspecialchars($p['nom']) ?></h3>
-            <p><strong>Type:</strong> <?= htmlspecialchars($p['product_type'] ?? 'General') ?></p>
-            <p><?= number_format((float)$p['prix'], 2) ?> MAD</p>
-
-            <div class="actions">
-                <a class="edit" href="modifier.php?id=<?= (int)$p['id'] ?>">Modifier</a>
-                <form action="delete.php" method="POST" onsubmit="return confirm('Supprimer ce produit ?')">
-                    <input type="hidden" name="id" value="<?= (int)$p['id'] ?>">
-                    <button class="delete" type="submit">Supprimer</button>
-                </form>
+        <section class="admin-hero">
+            <div>
+                <p class="admin-eyebrow">BuyEase admin</p>
+                <h1>Salut <?= htmlspecialchars($nomAdmin) ?></h1>
+                <p class="admin-subtitle">Gerez les produits, les commandes et les messages depuis un tableau de bord propre et rapide.</p>
             </div>
 
+            <div class="top-links">
+                <a class="admin-top-btn admin-home-btn" href="../../index.php">Home</a>
+                <a class="admin-top-btn admin-profile-btn" href="../../Pages/profile.php">Profile</a>
+                <a class="admin-top-btn admin-logout-btn" href="../login/logout.php">Logout</a>
+            </div>
+        </section>
+
+        <div class="view-tabs">
+            <a href="?view=products" class="<?= ($view === 'products') ? 'active' : '' ?>">Produits</a>
+            <a href="?view=orders" class="<?= ($view === 'orders') ? 'active' : '' ?>">Commandes</a>
+            <a href="?view=contacts" class="<?= ($view === 'contacts') ? 'active' : '' ?>">Messages</a>
         </div>
-    <?php endforeach; ?>
 
-    </div>
-
-<?php elseif ($view === 'orders'): ?>
-    <!-- ORDERS SECTION -->
-    <div class="orders-section">
-        <h2>Commandes des Utilisateurs</h2>
-        
-        <?php if (empty($orders)): ?>
-            <p style="text-align: center; color: #999;">Aucune commande pour le moment.</p>
-        <?php else: ?>
-            <table class="orders-table">
-                <thead>
-                    <tr>
-                        <th>#ID</th>
-                        <th>Nom Client</th>
-                        <th>Email</th>
-                        <th>Total (MAD)</th>
-                        <th>Statut</th>
-                        <th>Date</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($orders as $order): ?>
-                        <?php
-                            $orderDate = $order['created_at'] ?? null;
-                            $orderDateStr = $orderDate ? date('d/m/Y H:i', strtotime($orderDate)) : 'Date non disponible';
-                        ?>
-                        <tr>
-                            <td><strong><?= (int)$order['id'] ?></strong></td>
-                            <td><?= htmlspecialchars($order['user_name']) ?></td>
-                            <td><?= htmlspecialchars($order['user_email']) ?></td>
-                            <td><?= number_format((float)$order['total_amount'], 2) ?></td>
-                            <td>
-                                <span class="status-<?= strtolower($order['order_status'] ?? 'pending') ?>">
-                                    <?= htmlspecialchars($order['order_status'] ?? 'Pending') ?>
-                                </span>
-                            </td>
-                            <td><?= $orderDateStr ?></td>
-                            <td>
-                                <form action="" method="POST" style="display: inline;">
-                                    <input type="hidden" name="order_id" value="<?= (int)$order['id'] ?>">
-                                    <input type="hidden" name="update_order_status" value="1">
-                                    <select name="order_status" class="status-select" onchange="this.form.submit()">
-                                        <option value="Pending" <?= ($order['order_status'] === 'Pending') ? 'selected' : '' ?>>En attente</option>
-                                        <option value="Confirmed" <?= ($order['order_status'] === 'Confirmed') ? 'selected' : '' ?>>Confirmée</option>
-                                        <option value="Shipped" <?= ($order['order_status'] === 'Shipped') ? 'selected' : '' ?>>Expediée</option>
-                                        <option value="Delivered" <?= ($order['order_status'] === 'Delivered') ? 'selected' : '' ?>>Livree</option>
-                                        <option value="Cancelled" <?= ($order['order_status'] === 'Cancelled') ? 'selected' : '' ?>>Annulee</option>
-                                    </select>
-                                </form>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+        <?php if ($status === 'added'): ?>
+            <p class="flash">Produit ajoute avec succes.</p>
+        <?php elseif ($status === 'updated'): ?>
+            <p class="flash">Produit mis a jour avec succes.</p>
+        <?php elseif ($status === 'deleted'): ?>
+            <p class="flash">Produit supprime avec succes.</p>
         <?php endif; ?>
-    </div>
 
-<?php elseif ($view === 'contacts'): ?>
-    <!-- CONTACTS SECTION -->
-    <div class="contacts-section">
-        <h2>Messages de Contact</h2>
-        
-        <?php if (empty($contacts)): ?>
-            <p style="text-align: center; color: #999;">Aucun message de contact pour le moment.</p>
-        <?php else: ?>
-            <div class="contacts-list">
-                <?php foreach ($contacts as $contact): ?>
-                    <?php
-                        $contactStatus = $contact['status'] ?? 'unread';
-                        $contactCreatedAt = $contact['created_at'] ?? null;
-                    ?>
-                    <div class="contact-card status-<?= htmlspecialchars($contactStatus) ?>">
-                        <div class="contact-header">
-                            <div class="contact-info">
-                                <h3>Message de <?= htmlspecialchars($contact['nom']) ?></h3>
-                                <p class="contact-email"><i class="fas fa-envelope"></i> <?= htmlspecialchars($contact['email']) ?></p>
-                                <p class="contact-date"><i class="fas fa-calendar"></i> <?= $contactCreatedAt ? date('d/m/Y H:i', strtotime($contactCreatedAt)) : 'Date non disponible' ?></p>
-                            </div>
-                            <div class="contact-status">
-                                <span class="status-badge status-<?= htmlspecialchars($contactStatus) ?>">
-                                    <?php 
-                                        $statusText = [
-                                            'unread' => 'Non lu',
-                                            'read' => 'Lu',
-                                            'replied' => 'Répondu'
-                                        ];
-                                        echo $statusText[$contactStatus] ?? htmlspecialchars($contactStatus);
-                                    ?>
-                                </span>
-                            </div>
-                        </div>
-
-                        <div class="contact-body">
-                            <p class="contact-message"><?= nl2br(htmlspecialchars($contact['message'])) ?></p>
-                        </div>
-
-                        <div class="contact-actions">
-                            <form action="" method="POST" style="display: inline;">
-                                <input type="hidden" name="contact_id" value="<?= (int)$contact['id'] ?>">
-                                <input type="hidden" name="update_contact_status" value="1">
-                                <select name="contact_status" class="status-select" onchange="this.form.submit()">
-                                    <option value="unread" <?= ($contactStatus === 'unread') ? 'selected' : '' ?>>Non lu</option>
-                                    <option value="read" <?= ($contactStatus === 'read') ? 'selected' : '' ?>>Lu</option>
-                                    <option value="replied" <?= ($contactStatus === 'replied') ? 'selected' : '' ?>>Répondu</option>
-                                </select>
-                            </form>
-                            
-                            <form action="" method="POST" style="display: inline;" onsubmit="return confirm('Supprimer ce message ?')">
-                                <input type="hidden" name="contact_id" value="<?= (int)$contact['id'] ?>">
-                                <input type="hidden" name="delete_contact" value="1">
-                                <button type="submit" class="delete-btn">Supprimer</button>
-                            </form>
-                        </div>
-                    </div>
+        <?php if (!empty($_SESSION['product_errors'])): ?>
+            <div class="flash error-flash">
+                <?php foreach ($_SESSION['product_errors'] as $error): ?>
+                    <p><?= htmlspecialchars($error) ?></p>
                 <?php endforeach; ?>
             </div>
+            <?php unset($_SESSION['product_errors']); ?>
         <?php endif; ?>
-    </div>
 
-<?php endif; ?>
+        <?php if ($view === 'products'): ?>
+            <!-- PRODUCTS SECTION -->
+            <section class="products-layout">
+                <aside class="panel">
+                    <div class="panel-header">
+                        <h2>Ajouter produit</h2>
+                        <p>Ajoutez un produit avec une image propre, un prix clair et une categorie.</p>
+                    </div>
 
+                    <form class="product-form" action="add-product.php" method="POST" enctype="multipart/form-data">
+                        <div class="field">
+                            <label for="nom">Nom du produit</label>
+                            <input id="nom" type="text" name="nom" placeholder="Ex: PC Gamer Ryzen 5" required>
+                        </div>
+
+                        <div class="field">
+                            <label for="prix">Prix en MAD</label>
+                            <input id="prix" type="number" step="0.01" min="0.01" name="prix" placeholder="Ex: 5149.00" required>
+                        </div>
+
+                        <div class="field">
+                            <label for="type">Categorie</label>
+                            <select id="type" name="type" required>
+                                <option value="PC">PC</option>
+                                <option value="Laptop">Laptop</option>
+                                <option value="PC-Gamer">PC-Gamer</option>
+                                <option value="CPU">CPU</option>
+                                <option value="GPU">GPU</option>
+                            </select>
+                        </div>
+
+                        <div class="field">
+                            <label for="image">Image du produit</label>
+                            <input id="image" type="file" name="image" accept="image/*" required>
+                        </div>
+
+                        <button type="submit">Ajouter le produit</button>
+                    </form>
+                </aside>
+
+                <section>
+                    <div class="panel search-tools">
+                        <form class="search-form" method="GET">
+                            <input type="hidden" name="view" value="products">
+                            <div class="search-row">
+                                <input type="text" name="search" placeholder="Rechercher par nom, prix ou image..." value="<?= htmlspecialchars($search) ?>">
+                                <button type="submit">Rechercher</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="products-head">
+                        <div>
+                            <h2>Produits</h2>
+                            <p class="products-count"><?= count($products) ?> produit<?= count($products) > 1 ? 's' : '' ?> trouve<?= count($products) > 1 ? 's' : '' ?></p>
+                        </div>
+                    </div>
+
+                    <div class="container">
+                        <?php if (empty($products)): ?>
+                            <p class="empty-state">Aucun produit trouve. Essayez une autre recherche ou ajoutez votre premier produit.</p>
+                        <?php endif; ?>
+
+                        <?php foreach ($products as $p): ?>
+                            <article class="card">
+                                <img class="product-image" src="../../img/<?= htmlspecialchars($p['image'] ?: 'logo.eco.png') ?>" alt="<?= htmlspecialchars($p['nom']) ?>">
+
+                                <div class="card-body">
+                                    <h3 class="product-title"><?= htmlspecialchars($p['nom']) ?></h3>
+                                    <div class="product-meta">
+                                        <span class="type-pill"><?= htmlspecialchars($p['product_type'] ?? 'General') ?></span>
+                                        <span class="price"><?= number_format((float)$p['prix'], 2) ?> MAD</span>
+                                    </div>
+
+                                    <div class="actions">
+                                        <a class="edit" href="modifier.php?id=<?= (int)$p['id'] ?>">Modifier</a>
+                                        <form action="delete.php" method="POST" onsubmit="return confirm('Supprimer ce produit ?')">
+                                            <input type="hidden" name="id" value="<?= (int)$p['id'] ?>">
+                                            <button class="delete" type="submit">Supprimer</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </article>
+                        <?php endforeach; ?>
+                    </div>
+                </section>
+            </section>
+
+        <?php elseif ($view === 'orders'): ?>
+            <!-- ORDERS SECTION -->
+            <div class="orders-section">
+                <h2>Commandes des Utilisateurs</h2>
+
+                <?php if (empty($orders)): ?>
+                    <p style="text-align: center; color: blue;">Aucune commande pour le moment.</p>
+                <?php else: ?>
+                    <style>
+                        .orders-table thead tr:first-child {
+                            background-color: blue;
+                        }
+                    </style>
+
+                    <table class="orders-table">
+                        <thead>
+                            <tr style="background-color: red;">
+                                <th>ID</th>
+                                <th>Nom Client</th>
+                                <th>Email</th>
+                                <th>Total (MAD)</th>
+                                <th>Statut</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($orders as $order): ?>
+                                <?php
+                                $orderDate = $order['created_at'] ?? null;
+                                $orderDateStr = $orderDate ? date('d/m/Y H:i', strtotime($orderDate)) : 'Date non disponible';
+                                ?>
+                                <tr>
+                                    <td><strong><?= (int)$order['id'] ?></strong></td>
+                                    <td><?= htmlspecialchars($order['user_name']) ?></td>
+                                    <td><?= htmlspecialchars($order['user_email']) ?></td>
+                                    <td><?= number_format((float)$order['total_amount'], 2) ?></td>
+                                    <td>
+                                        <span class="status-<?= strtolower($order['order_status'] ?? 'pending') ?>">
+                                            <?= htmlspecialchars($order['order_status'] ?? 'Pending') ?>
+                                        </span>
+                                    </td>
+                                    <td><?= $orderDateStr ?></td>
+                                    <td>
+                                        <form action="" method="POST" style="display: inline;">
+                                            <input type="hidden" name="order_id" value="<?= (int)$order['id'] ?>">
+                                            <input type="hidden" name="update_order_status" value="1">
+                                            <select name="order_status" class="status-select" onchange="this.form.submit()">
+                                                <option value="Pending" <?= ($order['order_status'] === 'Pending') ? 'selected' : '' ?>>En attente</option>
+                                                <option value="Confirmed" <?= ($order['order_status'] === 'Confirmed') ? 'selected' : '' ?>>Confirmee</option>
+                                                <option value="Shipped" <?= ($order['order_status'] === 'Shipped') ? 'selected' : '' ?>>Expediee</option>
+                                                <option value="Delivered" <?= ($order['order_status'] === 'Delivered') ? 'selected' : '' ?>>Livree</option>
+                                                <option value="Cancelled" <?= ($order['order_status'] === 'Cancelled') ? 'selected' : '' ?>>Annulee</option>
+                                            </select>
+                                        </form>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                <?php endif; ?>
+            </div>
+
+        <?php elseif ($view === 'contacts'): ?>
+            <!-- CONTACTS SECTION -->
+            <div class="contacts-section">
+                <h2>Messages de Contact</h2>
+
+                <?php if (empty($contacts)): ?>
+                    <p style="text-align: center; color: #999;">Aucun message de contact pour le moment.</p>
+                <?php else: ?>
+                    <div class="contacts-list">
+                        <?php foreach ($contacts as $contact): ?>
+                            <?php
+                            $contactStatus = $contact['status'] ?? 'unread';
+                            $contactCreatedAt = $contact['created_at'] ?? null;
+                            ?>
+                            <div class="contact-card status-<?= htmlspecialchars($contactStatus) ?>">
+                                <div class="contact-header">
+                                    <div class="contact-info">
+                                        <h3>Message de <?= htmlspecialchars($contact['nom']) ?></h3>
+                                        <p class="contact-email"><i class="fas fa-envelope"></i> <?= htmlspecialchars($contact['email']) ?></p>
+                                        <p class="contact-date"><i class="fas fa-calendar"></i> <?= $contactCreatedAt ? date('d/m/Y H:i', strtotime($contactCreatedAt)) : 'Date non disponible' ?></p>
+                                    </div>
+                                    <div class="contact-status">
+                                        <span class="status-badge status-<?= htmlspecialchars($contactStatus) ?>">
+                                            <?php
+                                            $statusText = [
+                                                'unread' => 'Non lu',
+                                                'read' => 'Lu',
+                                                'replied' => 'Repondu'
+                                            ];
+                                            echo $statusText[$contactStatus] ?? htmlspecialchars($contactStatus);
+                                            ?>
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="contact-body">
+                                    <p class="contact-message"><?= nl2br(htmlspecialchars($contact['message'])) ?></p>
+                                </div>
+
+                                <div class="contact-actions">
+                                    <form action="" method="POST" style="display: inline;">
+                                        <input type="hidden" name="contact_id" value="<?= (int)$contact['id'] ?>">
+                                        <input type="hidden" name="update_contact_status" value="1">
+                                        <select name="contact_status" class="status-select" onchange="this.form.submit()">
+                                            <option value="unread" <?= ($contactStatus === 'unread') ? 'selected' : '' ?>>Non lu</option>
+                                            <option value="read" <?= ($contactStatus === 'read') ? 'selected' : '' ?>>Lu</option>
+                                            <option value="replied" <?= ($contactStatus === 'replied') ? 'selected' : '' ?>>Repondu</option>
+                                        </select>
+                                    </form>
+
+                                    <form action="" method="POST" style="display: inline;" onsubmit="return confirm('Supprimer ce message ?')">
+                                        <input type="hidden" name="contact_id" value="<?= (int)$contact['id'] ?>">
+                                        <input type="hidden" name="delete_contact" value="1">
+                                        <button type="submit" class="delete-btn">Supprimer</button>
+                                    </form>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+
+        <?php endif; ?>
+
+    </main>
 </body>
+
 </html>

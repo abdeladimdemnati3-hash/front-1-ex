@@ -19,7 +19,7 @@ if ($id <= 0) {
     exit();
 }
 
-$stmt = $pdo->prepare("SELECT * FROM produits WHERE id = ?");
+$stmt = $pdo->prepare("SELECT *, COALESCE(product_type, type_product) AS product_type FROM produits WHERE id = ?");
 $stmt->execute([$id]);
 $product = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -35,70 +35,107 @@ if (!$product) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Modifier produit</title>
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            background: #f4f6f9;
             margin: 0;
-            padding: 30px 16px;
-            text-align: center;
+            min-height: 100vh;
+            padding: 28px 16px;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            color: #1d2939;
+            background:
+                linear-gradient(135deg, rgba(15, 109, 223, 0.08), transparent 28%),
+                linear-gradient(315deg, rgba(22, 131, 77, 0.07), transparent 24%),
+                #f5f7fb;
         }
 
         .panel {
             max-width: 520px;
             margin: 0 auto;
+            padding: 18px;
+            border: 1px solid #d9e2ef;
+            border-radius: 14px;
             background: #fff;
-            border-radius: 18px;
-            padding: 24px;
-            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 10px 24px rgba(16, 24, 40, 0.07);
         }
 
         h1 {
-            color: #007bff;
-            margin-top: 0;
+            margin: 0 0 14px;
+            color: #101828;
+            font-size: 24px;
+            letter-spacing: 0;
         }
 
         form {
             display: grid;
-            gap: 12px;
+            gap: 9px;
         }
 
-        input {
+        input,
+        select {
             width: 100%;
-            padding: 10px 12px;
-            border: 1px solid #d8e0ea;
+            min-height: 38px;
+            padding: 8px 10px;
+            border: 1px solid #d9e2ef;
             border-radius: 10px;
-            box-sizing: border-box;
+            color: #1d2939;
+            background: #fff;
+            outline: none;
+        }
+
+        input[type="file"] {
+            background: #f8fbff;
+        }
+
+        input:focus,
+        select:focus {
+            border-color: #0f6ddf;
+            box-shadow: 0 0 0 4px rgba(15, 109, 223, 0.12);
         }
 
         button,
         .back-link {
-            display: inline-block;
-            padding: 10px 16px;
-            border-radius: 999px;
-            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 36px;
+            padding: 0 12px;
+            border: 1px solid transparent;
+            border-radius: 8px;
             text-decoration: none;
-            background: #007bff;
+            background: #0f6ddf;
             color: #fff;
             cursor: pointer;
+            font-weight: 800;
         }
 
         .back-link {
-            background: #374151;
-            margin-top: 12px;
+            width: fit-content;
+            background: #0f6ddf;
+            margin-top: 10px;
+        }
+
+        button:hover,
+        .back-link:hover {
+            background: #0a56b2;
         }
 
         .preview {
             width: 100%;
-            max-height: 220px;
+            aspect-ratio: 16 / 9;
             object-fit: cover;
-            border-radius: 12px;
-            margin-bottom: 8px;
+            border: 1px solid #edf1f7;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            background: #f8fbff;
         }
 
         .hint {
             margin: 0;
-            color: #5b6b7d;
-            font-size: 14px;
+            color: #667085;
+            font-size: 13px;
         }
     </style>
 </head>

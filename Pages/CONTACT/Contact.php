@@ -12,7 +12,7 @@ $showSearch = false;
   <title>Contact - BuyEase</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="../../index-style.css">
-  <link rel="stylesheet" href="Contact.css">
+  <link rel="stylesheet" href="Contact.css?v=4">
 </head>
 <body class="contact-page">
   <div class="main-container">

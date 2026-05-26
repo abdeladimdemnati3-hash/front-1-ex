@@ -30,6 +30,16 @@ $pdo->exec(
     )"
 );
 
+try {
+    $pdo->exec("ALTER TABLE produits ADD COLUMN IF NOT EXISTS type_product VARCHAR(100) DEFAULT 'General'");
+} catch (Exception $e) {
+}
+
+try {
+    $pdo->exec("ALTER TABLE produits ADD COLUMN product_type VARCHAR(100) DEFAULT 'General'");
+} catch (Exception $e) {
+}
+
 if ($userEmail) {
     $pdo->exec(
         "CREATE TABLE IF NOT EXISTS cart_items (

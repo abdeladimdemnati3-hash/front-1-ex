@@ -18,6 +18,16 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit();
 }
 
+try {
+    $pdo->exec("ALTER TABLE produits ADD COLUMN IF NOT EXISTS type_product VARCHAR(100) DEFAULT 'General'");
+} catch (Exception $e) {
+}
+
+try {
+    $pdo->exec("ALTER TABLE produits ADD COLUMN product_type VARCHAR(100) DEFAULT 'General'");
+} catch (Exception $e) {
+}
+
 $id = (int)($_POST['id'] ?? 0);
 $nom = trim($_POST['nom'] ?? '');
 $prix = (float)($_POST['prix'] ?? 0);
@@ -52,8 +62,8 @@ if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
     }
 }
 
-$updateStmt = $pdo->prepare("UPDATE produits SET nom = ?, prix = ?, image = ?, type_product = ? WHERE id = ?");
-$updateStmt->execute([$nom, $prix, $imageName, $type, $id]);
+$updateStmt = $pdo->prepare("UPDATE produits SET nom = ?, prix = ?, image = ?, type_product = ?, product_type = ? WHERE id = ?");
+$updateStmt->execute([$nom, $prix, $imageName, $type, $type, $id]);
 
 header("Location: admin.php?status=updated");
 exit();

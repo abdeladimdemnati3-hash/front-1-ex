@@ -72,7 +72,7 @@ $cartStatus = $cartCount > 0 ? '(' . $cartCount . ' article(s))' : '(Vide)';
     <header class="header-top-row">
       <nav class="logo">
         <a href="../index.php">
-          <img src="../img/logo.eco.png" alt="BuyEase Logo" width="300" />
+          <img src="../img/logo_pp.png" alt="BuyEase Logo" width="300" />
         </a>
       </nav>
 

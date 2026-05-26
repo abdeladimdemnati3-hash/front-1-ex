@@ -52,11 +52,11 @@ if ($nom === '') {
 }
 
 if ($prixClean === '' || !is_numeric($prixClean)) {
-	$errors[] = 'Le prix doit être un nombre valide';
+	$errors[] = 'Le prix doit etre un nombre valide';
 } else {
 	$prix = (float)$prixClean;
 	if ($prix <= 0) {
-		$errors[] = 'Le prix doit être un nombre positif';
+		$errors[] = 'Le prix doit etre un nombre positif';
 	}
 }
 
@@ -88,7 +88,7 @@ $allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
 $ext = strtolower(pathinfo($image, PATHINFO_EXTENSION));
 
 if (!in_array($ext, $allowed, true)) {
-	$errors[] = 'Type d\'image non autorisé. Utilisez JPG, PNG, WEBP ou GIF';
+	$errors[] = 'Type d\'image non autorise. Utilisez JPG, PNG, WEBP ou GIF';
 	$_SESSION['product_errors'] = $errors;
 	header("Location: admin.php");
 	exit();
@@ -104,16 +104,16 @@ $imageName = time() . "_" . preg_replace('/[^a-zA-Z0-9._-]/', '_', $image);
 $imgPath = "../../img/" . $imageName;
 
 if (!move_uploaded_file($tmp, $imgPath)) {
-	$errors[] = 'Impossible de déplacer le fichier image';
+	$errors[] = 'Impossible de deplacer le fichier image';
 	$_SESSION['product_errors'] = $errors;
 	header("Location: admin.php");
 	exit();
 }
 
 try {
-	$sql = "INSERT INTO produits (nom, prix, image, type_product) VALUES (?, ?, ?, ?)";
+	$sql = "INSERT INTO produits (nom, prix, image, type_product, product_type) VALUES (?, ?, ?, ?, ?)";
 	$stmt = $pdo->prepare($sql);
-	$stmt->execute([$nom, $prix, $imageName, $type]);
+	$stmt->execute([$nom, $prix, $imageName, $type, $type]);
 
 	header("Location: admin.php?status=added");
 	exit();
@@ -129,8 +129,8 @@ try {
 	error_log("add-product.php error: " . $errorMessage);
 
 	$_SESSION['product_errors'] = [
-		'Erreur lors de l\'ajout du produit. Veuillez réessayer.',
-		'Détail: ' . $errorMessage
+		'Erreur lors de l\'ajout du produit. Veuillez reessayer.',
+		'Detail: ' . $errorMessage
 	];
 
 	header("Location: admin.php");

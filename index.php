@@ -31,6 +31,16 @@ $pdo->exec(
   )"
 );
 
+try {
+  $pdo->exec("ALTER TABLE produits ADD COLUMN IF NOT EXISTS type_product VARCHAR(100) DEFAULT 'General'");
+} catch (Exception $e) {
+}
+
+try {
+  $pdo->exec("ALTER TABLE produits ADD COLUMN product_type VARCHAR(100) DEFAULT 'General'");
+} catch (Exception $e) {
+}
+
 $validTypes = ['all', 'PC', 'Laptop', 'PC-Gamer', 'CPU', 'GPU'];
 $typeFilter = $_GET['type'] ?? 'all';
 if (!in_array($typeFilter, $validTypes, true)) {

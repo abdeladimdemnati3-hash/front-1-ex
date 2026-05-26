@@ -10,7 +10,7 @@
 <body>
   <div class="im">
     <a href="../../index.php">
-    <img src="../../img/logo.eco.png" alt="login image" width="200px" />
+    <img src="../../img/logo_pp.png" alt="login image" width="200px" />
     </a></div>
 
   <form class="form" action="login-ver.php" method="post">

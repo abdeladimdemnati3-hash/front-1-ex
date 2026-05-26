@@ -13,7 +13,7 @@
   <div class="container">
     <nav class="logo">
       <a href="../../index.php">
-        <img src="../../img/logo.eco.png" alt="BuyEase Logo" width="300" />
+        <img src="../../img/logo_pp.png" alt="BuyEase Logo" width="300" />
       </a>
     </nav>
 

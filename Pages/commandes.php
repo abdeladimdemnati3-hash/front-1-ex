@@ -78,16 +78,38 @@ if (!in_array($statusFilter, $validStatuses)) {
     $statusFilter = 'all';
 }
 
+$ordersPerPage = 5;
+$currentPage = (int)($_GET['page'] ?? 1);
+
+if ($currentPage < 1) {
+    $currentPage = 1;
+}
+
+$totalOrders = 0;
+$totalPages = 1;
+
 try {
-    $ordersSql = "SELECT * FROM orders WHERE user_email = ?";
+    $whereSql = " WHERE user_email = ?";
     $orderParams = [$userEmail];
 
     if ($statusFilter !== 'all') {
-        $ordersSql .= " AND order_status = ?";
+        $whereSql .= " AND order_status = ?";
         $orderParams[] = $statusFilter;
     }
 
-    $ordersSql .= " ORDER BY created_at DESC";
+    $countSql = "SELECT COUNT(*) FROM orders" . $whereSql;
+    $countStmt = $pdo->prepare($countSql);
+    $countStmt->execute($orderParams);
+    $totalOrders = (int)$countStmt->fetchColumn();
+    $totalPages = max(1, (int)ceil($totalOrders / $ordersPerPage));
+
+    if ($currentPage > $totalPages) {
+        $currentPage = $totalPages;
+    }
+
+    $offset = ($currentPage - 1) * $ordersPerPage;
+
+    $ordersSql = "SELECT * FROM orders" . $whereSql . " ORDER BY created_at DESC LIMIT " . (int)$ordersPerPage . " OFFSET " . (int)$offset;
 
     $ordersStmt = $pdo->prepare($ordersSql);
     $ordersStmt->execute($orderParams);
@@ -96,6 +118,21 @@ try {
 
 } catch (Exception $e) {
     $orders = [];
+    $totalOrders = 0;
+    $totalPages = 1;
+    $currentPage = 1;
+}
+
+$paginationBaseParams = [];
+
+if ($statusFilter !== 'all') {
+    $paginationBaseParams['status'] = $statusFilter;
+}
+
+function commandesPageUrl(array $baseParams, int $page): string {
+    $params = $baseParams;
+    $params['page'] = $page;
+    return 'commandes.php?' . http_build_query($params);
 }
 
 $orderItems = [];
@@ -220,27 +257,27 @@ $avatarPath = $hasAvatar ? '../img/' . $userImage : '';
 
         <div class="filter-buttons">
 
-          <a href="commandes.php" class="filter-btn <?= ($statusFilter === 'all') ? 'active' : '' ?>">
+          <a href="commandes.php?page=1" class="filter-btn <?= ($statusFilter === 'all') ? 'active' : '' ?>">
             Tous
           </a>
 
-          <a href="commandes.php?status=Pending" class="filter-btn status-pending <?= ($statusFilter === 'Pending') ? 'active' : '' ?>">
+          <a href="commandes.php?status=Pending&page=1" class="filter-btn status-pending <?= ($statusFilter === 'Pending') ? 'active' : '' ?>">
             <i class="fas fa-hourglass-half"></i> En attente
           </a>
 
-          <a href="commandes.php?status=Confirmed" class="filter-btn status-confirmed <?= ($statusFilter === 'Confirmed') ? 'active' : '' ?>">
+          <a href="commandes.php?status=Confirmed&page=1" class="filter-btn status-confirmed <?= ($statusFilter === 'Confirmed') ? 'active' : '' ?>">
             <i class="fas fa-check-circle"></i> Confirmée
           </a>
 
-          <a href="commandes.php?status=Shipped" class="filter-btn status-shipped <?= ($statusFilter === 'Shipped') ? 'active' : '' ?>">
+          <a href="commandes.php?status=Shipped&page=1" class="filter-btn status-shipped <?= ($statusFilter === 'Shipped') ? 'active' : '' ?>">
             <i class="fas fa-truck"></i> Expédiée
           </a>
 
-          <a href="commandes.php?status=Delivered" class="filter-btn status-delivered <?= ($statusFilter === 'Delivered') ? 'active' : '' ?>">
+          <a href="commandes.php?status=Delivered&page=1" class="filter-btn status-delivered <?= ($statusFilter === 'Delivered') ? 'active' : '' ?>">
             <i class="fas fa-box"></i> Livrée
           </a>
 
-          <a href="commandes.php?status=Cancelled" class="filter-btn status-cancelled <?= ($statusFilter === 'Cancelled') ? 'active' : '' ?>">
+          <a href="commandes.php?status=Cancelled&page=1" class="filter-btn status-cancelled <?= ($statusFilter === 'Cancelled') ? 'active' : '' ?>">
             <i class="fas fa-times-circle"></i> Annulée
           </a>
 
@@ -259,6 +296,9 @@ $avatarPath = $hasAvatar ? '../img/' . $userImage : '';
       <?php else: ?>
 
         <div class="orders-list">
+          <p class="pagination-summary">
+            Page <?= (int)$currentPage ?> sur <?= (int)$totalPages ?> - <?= (int)$totalOrders ?> commande<?= $totalOrders > 1 ? 's' : '' ?>
+          </p>
 
           <?php foreach ($orders as $order): ?>
 
@@ -355,6 +395,37 @@ $avatarPath = $hasAvatar ? '../img/' . $userImage : '';
           <?php endforeach; ?>
 
         </div>
+
+        <?php if ($totalPages > 1): ?>
+          <nav class="pagination-nav" aria-label="Pagination des commandes">
+            <?php if ($currentPage > 1): ?>
+              <a class="pagination-btn" href="<?= htmlspecialchars(commandesPageUrl($paginationBaseParams, $currentPage - 1)) ?>">Precedent</a>
+            <?php else: ?>
+              <span class="pagination-btn disabled">Precedent</span>
+            <?php endif; ?>
+
+            <div class="pagination-pages">
+              <?php for ($pageNumber = 1; $pageNumber <= $totalPages; $pageNumber++): ?>
+                <?php if ($pageNumber === 1 || $pageNumber === $totalPages || abs($pageNumber - $currentPage) <= 2): ?>
+                  <a
+                    class="pagination-number <?= $pageNumber === $currentPage ? 'active' : '' ?>"
+                    href="<?= htmlspecialchars(commandesPageUrl($paginationBaseParams, $pageNumber)) ?>"
+                  >
+                    <?= (int)$pageNumber ?>
+                  </a>
+                <?php elseif (abs($pageNumber - $currentPage) === 3): ?>
+                  <span class="pagination-dots">...</span>
+                <?php endif; ?>
+              <?php endfor; ?>
+            </div>
+
+            <?php if ($currentPage < $totalPages): ?>
+              <a class="pagination-btn" href="<?= htmlspecialchars(commandesPageUrl($paginationBaseParams, $currentPage + 1)) ?>">Suivant</a>
+            <?php else: ?>
+              <span class="pagination-btn disabled">Suivant</span>
+            <?php endif; ?>
+          </nav>
+        <?php endif; ?>
 
       <?php endif; ?>
 
