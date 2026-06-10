@@ -1,19 +1,28 @@
 
     body {
+      margin: 0;
       background-color: #D3D3D3;
       font-family: "Segoe UI", Tahoma, sans-serif;
+      min-height: 100vh;
+      padding: 12px;
+      box-sizing: border-box;
+    }
+
+    * {
+      box-sizing: border-box;
     }
 
     .im {
-      width: 50%;
+      width: min(50%, 300px);
       margin: 10px auto;
       display: block;
       border-radius: 5px;
       text-align: center;
+      height: auto;
     }
 
     .form {
-      width: 30%;
+      width: min(420px, 100%);
       margin: 20px auto;
       border-radius: 30px;
       display: flex;
@@ -42,6 +51,52 @@
       background-color: #0a56b2;
     }
 
+    .form-title {
+      margin: 0 0 4px;
+      text-align: center;
+      color: #1f2937;
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .success-message,
+    .error-message {
+      width: 100%;
+      margin: 0;
+      padding: 10px 12px;
+      border-radius: 8px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.4;
+    }
+
+    .success-message {
+      background-color: #e7f7ee;
+      color: #166534;
+      border: 1px solid #9fe0b7;
+    }
+
+    .error-message {
+      background-color: #fdecec;
+      color: #991b1b;
+      border: 1px solid #f3b6b6;
+    }
+
+    .link-forgot {
+      display: block;
+      text-align: center;
+      color: #374151;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .link-forgot:hover,
+    .link-Sign-up:hover {
+      text-decoration: underline;
+    }
+
     .link-Sign-up {
       display: block;
       text-align: center;
@@ -65,26 +120,26 @@
 
     /* ===== Mobile (max 767px) ===== */
     @media (max-width: 767px) {
-      .im { width: 80%; }
-      .form { width: 90%; }
+      .im { width: min(80%, 260px); }
+      .form { width: 100%; }
     }
 
     /* ===== Tablette (768px - 1023px) ===== */
     @media (min-width: 768px) and (max-width: 1023px) {
-      .im { width: 60%; }
-      .form { width: 70%; }
+      .im { width: min(60%, 280px); }
+      .form { width: min(70%, 520px); }
     }
 
     /* ===== Desktop (min-width: 1024px) ===== */
     @media (min-width: 1024px) {
-      .im { width: 50%; }
-      .form { width: 30%; }
+      .im { width: min(50%, 300px); }
+      .form { width: min(30%, 420px); }
     }
 
     /* ===== Très petit mobile (max 480px) ===== */
     @media (max-width: 480px) {
-      .im { width: 90%; }
-      .form { width: 95%; }
+      .im { width: min(90%, 230px); }
+      .form { width: 100%; }
       .form input, .form button { font-size: 14px; }
       .footer-lang { display: flex; flex-direction: column; gap: 5px; }
     }

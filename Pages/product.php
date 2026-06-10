@@ -89,7 +89,7 @@ $added = isset($_GET['added']);
 
     .product-detail {
       display: grid;
-      grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr);
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       gap: 26px;
       align-items: center;
       background: #fff;
@@ -101,6 +101,7 @@ $added = isset($_GET['added']);
 
     .product-detail-image {
       width: 100%;
+      aspect-ratio: 4 / 3;
       max-height: 460px;
       object-fit: cover;
       border-radius: 14px;
@@ -110,6 +111,7 @@ $added = isset($_GET['added']);
     .product-detail h1 {
       margin: 0 0 12px;
       color: #1e293b;
+      overflow-wrap: anywhere;
     }
 
     .product-type {
@@ -169,6 +171,7 @@ $added = isset($_GET['added']);
       align-items: center;
       justify-content: space-between;
       gap: 14px;
+      flex-wrap: wrap;
     }
 
     .review-heading h2 {
@@ -294,12 +297,34 @@ $added = isset($_GET['added']);
     }
 
     @media (max-width: 767px) {
+      .product-page {
+        margin-top: 18px;
+      }
+
       .product-detail {
         grid-template-columns: 1fr;
+        gap: 18px;
+        padding: 14px;
+        border-radius: 12px;
       }
 
       .product-actions {
         grid-template-columns: 1fr;
+      }
+
+      .product-price {
+        font-size: 24px;
+      }
+
+      .review-section {
+        padding: 14px;
+        border-radius: 12px;
+      }
+    }
+
+    @media (max-width: 420px) {
+      .rating-picker label {
+        font-size: 26px;
       }
     }
   </style>

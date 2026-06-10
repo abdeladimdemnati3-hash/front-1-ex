@@ -60,6 +60,16 @@ try {
 } catch (Exception $e) {
 }
 
+try {
+    $pdo->exec("ALTER TABLE orders ADD COLUMN order_number VARCHAR(40) DEFAULT NULL");
+} catch (Exception $e) {
+}
+
+try {
+    $pdo->exec("UPDATE orders SET order_number = CONCAT('CMD-', DATE_FORMAT(created_at, '%Y%m%d'), '-', LPAD(id, 6, '0')) WHERE order_number IS NULL OR order_number = ''");
+} catch (Exception $e) {
+}
+
 $pdo->exec(
     "CREATE TABLE IF NOT EXISTS order_items (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -120,15 +130,32 @@ $view = $_GET['view'] ?? 'products';
 
 $search = $_GET['search'] ?? '';
 $status = $_GET['status'] ?? '';
+$orders = [];
+$ordersPerPage = 5;
+$ordersCurrentPage = max(1, (int)($_GET['page'] ?? 1));
+$ordersTotal = 0;
+$ordersTotalPages = 1;
 
 if ($view === 'orders') {
     try {
-        $ordersSql = "SELECT * FROM orders ORDER BY created_at DESC";
+        $ordersCountStmt = $pdo->query("SELECT COUNT(*) FROM orders");
+        $ordersTotal = (int)$ordersCountStmt->fetchColumn();
+        $ordersTotalPages = max(1, (int)ceil($ordersTotal / $ordersPerPage));
+
+        if ($ordersCurrentPage > $ordersTotalPages) {
+            $ordersCurrentPage = $ordersTotalPages;
+        }
+
+        $ordersOffset = ($ordersCurrentPage - 1) * $ordersPerPage;
+        $ordersSql = "SELECT * FROM orders ORDER BY created_at DESC LIMIT " . (int)$ordersPerPage . " OFFSET " . (int)$ordersOffset;
         $ordersStmt = $pdo->prepare($ordersSql);
         $ordersStmt->execute();
         $orders = $ordersStmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
         $orders = [];
+        $ordersTotal = 0;
+        $ordersTotalPages = 1;
+        $ordersCurrentPage = 1;
     }
 } elseif ($view === 'contacts') {
     $contactsSql = "SELECT * FROM contact ORDER BY created_at DESC";
@@ -187,6 +214,12 @@ if ($view === 'orders') {
             box-sizing: border-box;
         }
 
+        html,
+        body {
+            width: 100%;
+            overflow-x: hidden;
+        }
+
         body {
             margin: 0;
             min-height: 100vh;
@@ -223,7 +256,7 @@ if ($view === 'orders') {
 
         .admin-hero {
             display: grid;
-            grid-template-columns: 1fr auto;
+            grid-template-columns: minmax(0, 1fr) auto;
             gap: 14px;
             align-items: center;
             padding: 16px 18px;
@@ -475,6 +508,7 @@ if ($view === 'orders') {
             gap: 10px;
             align-items: end;
             margin-bottom: 10px;
+            flex-wrap: wrap;
         }
 
         .products-head h2 {
@@ -516,8 +550,8 @@ if ($view === 'orders') {
             aspect-ratio: 16 / 10;
             height: auto;
             border-radius: 9px;
-            object-fit: cover;
-            background: var(--panel-soft);
+            object-fit: contain;
+            background: #ffffff;
             border: 1px solid #eef2f7;
         }
 
@@ -533,6 +567,7 @@ if ($view === 'orders') {
             color: #101828;
             font-size: 14px;
             line-height: 1.35;
+            overflow-wrap: anywhere;
         }
 
         .product-meta {
@@ -615,6 +650,70 @@ if ($view === 'orders') {
         .contacts-section {
             padding: 14px;
             overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .section-heading-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+
+        .pagination-summary {
+            margin: 4px 0 10px;
+            color: var(--muted);
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .admin-pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 18px;
+            padding-top: 16px;
+            border-top: 1px solid #e7edf5;
+        }
+
+        .pagination-pages {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .pagination-link {
+            min-width: 38px;
+            min-height: 36px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 12px;
+            border-radius: 8px;
+            border: 1px solid var(--line);
+            background: #ffffff;
+            color: var(--text);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 800;
+        }
+
+        .pagination-link.active,
+        .pagination-link:hover {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: #ffffff;
+        }
+
+        .pagination-link.disabled {
+            pointer-events: none;
+            opacity: 0.45;
+            background: var(--panel-soft);
+            color: var(--muted);
         }
 
         .orders-table {
@@ -766,7 +865,20 @@ if ($view === 'orders') {
             }
 
             .top-links {
-                justify-content: flex-start;
+                justify-content: stretch;
+            }
+
+            .top-links a,
+            .view-tabs a,
+            button,
+            .edit {
+                min-height: 40px;
+                padding: 0 12px;
+                font-size: 14px;
+            }
+
+            .top-links a {
+                flex: 1 1 120px;
             }
 
             .container {
@@ -775,6 +887,36 @@ if ($view === 'orders') {
 
             .actions {
                 grid-template-columns: 1fr;
+            }
+
+            .orders-section,
+            .contacts-section {
+                padding: 10px;
+                border-radius: 12px;
+            }
+        }
+
+        @media (max-width: 420px) {
+            .admin-shell {
+                width: min(100% - 12px, 1180px);
+            }
+
+            .admin-hero {
+                padding: 12px;
+            }
+
+            .view-tabs a,
+            .top-links a {
+                flex-basis: 100%;
+            }
+
+            .product-meta {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .type-pill {
+                max-width: 100%;
             }
         }
     </style>
@@ -848,6 +990,12 @@ if ($view === 'orders') {
                                 <option value="PC-Gamer">PC-Gamer</option>
                                 <option value="CPU">CPU</option>
                                 <option value="GPU">GPU</option>
+                                <option value="Ram">Ram</option>
+                                <option value="Disque">Disque</option>
+                                <option value="Alimentation">Alimentation</option>
+                                <option value="Clavier">Clavier</option>
+                                <option value="Souris">Souris</option>
+                                <option value="Ecran">Ecran</option>
                             </select>
                         </div>
 
@@ -911,7 +1059,14 @@ if ($view === 'orders') {
         <?php elseif ($view === 'orders'): ?>
             <!-- ORDERS SECTION -->
             <div class="orders-section">
-                <h2>Commandes des Utilisateurs</h2>
+                <div class="section-heading-row">
+                    <div>
+                        <h2>Commandes des Utilisateurs</h2>
+                        <p class="pagination-summary">
+                            Page <?= (int)$ordersCurrentPage ?> / <?= (int)$ordersTotalPages ?> - <?= (int)$ordersTotal ?> commande<?= $ordersTotal > 1 ? 's' : '' ?>
+                        </p>
+                    </div>
+                </div>
 
                 <?php if (empty($orders)): ?>
                     <p style="text-align: center; color: blue;">Aucune commande pour le moment.</p>
@@ -925,7 +1080,7 @@ if ($view === 'orders') {
                     <table class="orders-table">
                         <thead>
                             <tr style="background-color: red;">
-                                <th>ID</th>
+                                <th>N Commande</th>
                                 <th>Nom Client</th>
                                 <th>Email</th>
                                 <th>Total (MAD)</th>
@@ -937,11 +1092,13 @@ if ($view === 'orders') {
                         <tbody>
                             <?php foreach ($orders as $order): ?>
                                 <?php
+                                $orderId = (int)$order['id'];
+                                $orderNumber = $order['order_number'] ?: ('CMD-' . date('Ymd', strtotime($order['created_at'] ?? 'now')) . '-' . str_pad((string)$orderId, 6, '0', STR_PAD_LEFT));
                                 $orderDate = $order['created_at'] ?? null;
                                 $orderDateStr = $orderDate ? date('d/m/Y H:i', strtotime($orderDate)) : 'Date non disponible';
                                 ?>
                                 <tr>
-                                    <td><strong><?= (int)$order['id'] ?></strong></td>
+                                    <td><strong><?= htmlspecialchars($orderNumber) ?></strong></td>
                                     <td><?= htmlspecialchars($order['user_name']) ?></td>
                                     <td><?= htmlspecialchars($order['user_email']) ?></td>
                                     <td><?= number_format((float)$order['total_amount'], 2) ?></td>
@@ -968,6 +1125,35 @@ if ($view === 'orders') {
                             <?php endforeach; ?>
                         </tbody>
                     </table>
+
+                    <?php if ($ordersTotalPages > 1): ?>
+                        <nav class="admin-pagination" aria-label="Pagination commandes">
+                            <a
+                                class="pagination-link <?= $ordersCurrentPage <= 1 ? 'disabled' : '' ?>"
+                                href="<?= $ordersCurrentPage <= 1 ? '#' : '?view=orders&page=' . (int)($ordersCurrentPage - 1) ?>"
+                            >
+                                Precedent
+                            </a>
+
+                            <div class="pagination-pages">
+                                <?php for ($pageNumber = 1; $pageNumber <= $ordersTotalPages; $pageNumber++): ?>
+                                    <a
+                                        class="pagination-link <?= $pageNumber === $ordersCurrentPage ? 'active' : '' ?>"
+                                        href="?view=orders&page=<?= (int)$pageNumber ?>"
+                                    >
+                                        <?= (int)$pageNumber ?>
+                                    </a>
+                                <?php endfor; ?>
+                            </div>
+
+                            <a
+                                class="pagination-link <?= $ordersCurrentPage >= $ordersTotalPages ? 'disabled' : '' ?>"
+                                href="<?= $ordersCurrentPage >= $ordersTotalPages ? '#' : '?view=orders&page=' . (int)($ordersCurrentPage + 1) ?>"
+                            >
+                                Suivant
+                            </a>
+                        </nav>
+                    <?php endif; ?>
                 <?php endif; ?>
             </div>
 

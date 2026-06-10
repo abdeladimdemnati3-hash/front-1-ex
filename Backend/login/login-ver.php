@@ -3,28 +3,32 @@ session_start();
 include "../../config/db.php";
 
 $email = trim($_POST['email'] ?? '');
-$mdp   = trim($_POST['password'] ?? '');
+$mdp   = $_POST['password'] ?? '';
 
 if (empty($email) || empty($mdp)) {
-    echo "Email ou mot de passe requis";
+    header("Location: Login.php?error=missing");
     exit();
 }
 
+if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    header("Location: Login.php?error=invalid");
+    exit();
+}
 
-$sql = "SELECT * FROM users WHERE EMAIL = ? OR email = ?";
+$sql = "SELECT * FROM app_users WHERE EMAIL = ?";
 $stmt = $pdo->prepare($sql);
-$stmt->execute([$email, $email]);
+$stmt->execute([$email]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$user) {
     
-    $sql = "SELECT * FROM users WHERE LOWER(EMAIL) = ? OR LOWER(email) = ?";
+    $sql = "SELECT * FROM app_users WHERE LOWER(EMAIL) = ?";
     $stmt = $pdo->prepare($sql);
-    $stmt->execute([strtolower($email), strtolower($email)]);
+    $stmt->execute([strtolower($email)]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
-if ($user && $mdp == $user['mdp']) {
+if ($user && hash_equals((string)($user['mdp'] ?? ''), $mdp)) {
     
     $image = $user['image'] ?? $user['IMAGE'] ?? null;
     
@@ -45,7 +49,7 @@ if ($user && $mdp == $user['mdp']) {
     }
     
     
-    $userEmail = $user['EMAIL'] ?? $user['email'] ?? $email;
+    $userEmail = $user['EMAIL'] ?? $email;
     
     
     $_SESSION['user'] = [
@@ -65,6 +69,7 @@ if ($user && $mdp == $user['mdp']) {
     exit();
 
 } else {
-    echo "Email ou mot de passe incorrect";
+    header("Location: Login.php?error=incorrect");
+    exit();
 }
 ?>

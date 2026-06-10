@@ -41,7 +41,7 @@ try {
 } catch (Exception $e) {
 }
 
-$validTypes = ['all', 'PC', 'Laptop', 'PC-Gamer', 'CPU', 'GPU'];
+$validTypes = ['all', 'PC', 'Laptop', 'PC-Gamer', 'CPU', 'GPU','Ram','Disque','Ecran','Alimentation','Clavier','Souris'];
 $typeFilter = $_GET['type'] ?? 'all';
 if (!in_array($typeFilter, $validTypes, true)) {
   $typeFilter = 'all';
@@ -65,11 +65,27 @@ if (!empty($where)) {
   $productsSql .= " WHERE " . implode(' AND ', $where);
 }
 
-$productsSql .= " ORDER BY id DESC";
+$countSql = "SELECT COUNT(*) FROM produits";
+if (!empty($where)) {
+  $countSql .= " WHERE " . implode(' AND ', $where);
+}
+
+$productsPerPage = 8;
+$totalStmt = $pdo->prepare($countSql);
+$totalStmt->execute($productsParams);
+$totalProducts = (int)$totalStmt->fetchColumn();
+$totalPages = max(1, (int)ceil($totalProducts / $productsPerPage));
+$currentPage = max(1, (int)($_GET['page'] ?? 1));
+if ($currentPage > $totalPages) {
+  $currentPage = $totalPages;
+}
+$offset = ($currentPage - 1) * $productsPerPage;
+
+$productsSql .= " ORDER BY id DESC LIMIT $productsPerPage OFFSET $offset";
 $productsStmt = $pdo->prepare($productsSql);
 $productsStmt->execute($productsParams);
 $products = $productsStmt->fetchAll(PDO::FETCH_ASSOC);
-$searchResultCount = count($products);
+$searchResultCount = $totalProducts;
 $feedbackStats = [];
 
 $pdo->exec(
@@ -128,6 +144,10 @@ function buildQuery(array $params): string {
     }));
 }
 
+function paginationUrl(int $page): string {
+  return 'index.php?' . buildQuery(['page' => $page]);
+}
+
 function renderProductStars(float $rating): string {
   $rounded = (int)round($rating);
   $stars = '';
@@ -151,7 +171,7 @@ function renderProductStars(float $rating): string {
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
-    <link href="index-style.css" rel="stylesheet">
+    <link href="index-style.css?v=full-photo-1" rel="stylesheet">
   </head>
   <body>
     <div class="main-container">
@@ -237,7 +257,7 @@ function renderProductStars(float $rating): string {
 
       <main>
         <div class="content-block">
-          <h2>Bienvenue sur BuyEase Pc</h2>
+          <h2>Welcome to BuyEase Pc</h2>
           <p>
             Plonge dans l'univers du gaming haute performance ! Ici, nous
             assemblons des PC Gamer puissants, conçus pour offrir vitesse,
@@ -251,6 +271,7 @@ function renderProductStars(float $rating): string {
             <p class="type-sidebar-note">Filtre vertical par type de produit.</p>
             <form action="index.php" method="GET" class="category-filter-form">
               <input type="hidden" name="q" value="<?= htmlspecialchars($search) ?>">
+              <input type="hidden" name="page" value="1">
               <select name="type" class="category-select" onchange="this.form.submit()">
                 <?php
                   $typeNames = [
@@ -260,6 +281,12 @@ function renderProductStars(float $rating): string {
                     'PC-Gamer' => 'PC Gamer',
                     'CPU' => 'CPU',
                     'GPU' => 'GPU',
+                    'Ram' => 'Ram',
+                    'Disque' => 'Disque',
+                    'Alimentation' => 'Alimentation',
+                    'Clavier' => 'Clavier',
+                    'Souris' => 'Souris',
+                    'Ecran' => 'Ecran',
                   ];
                 ?>
                 <?php foreach ($typeNames as $typeKey => $typeLabel): ?>
@@ -271,7 +298,20 @@ function renderProductStars(float $rating): string {
             </form>
           </aside>
 
-          <div class="products-grid">
+          <section class="products-panel">
+            <div class="products-head">
+              <div>
+                <h2>Produits</h2>
+                <p class="products-count">
+                  <?= (int)$totalProducts ?> produit<?= $totalProducts > 1 ? 's' : '' ?> trouve<?= $totalProducts > 1 ? 's' : '' ?>
+                </p>
+              </div>
+              <?php if ($totalPages > 1): ?>
+                <span class="page-indicator">Page <?= (int)$currentPage ?> / <?= (int)$totalPages ?></span>
+              <?php endif; ?>
+            </div>
+
+            <div class="products-grid">
           <?php if ($addedToCart): ?>
             <p class="cart-flash success">Produit ajoute au panier.</p>
           <?php endif; ?>
@@ -295,52 +335,110 @@ function renderProductStars(float $rating): string {
                 <div class="custom-card">
                   <?php if (!empty($product['image'])): ?>
                     <img
-                      class="card-img"
+                      class="product-image"
                       src="img/<?= htmlspecialchars($product['image']) ?>"
                       alt="<?= htmlspecialchars($product['nom']) ?>"
                     />
                   <?php else: ?>
                     <img
-                      class="card-img"
+                      class="product-image"
                       src="img/logo.eco.png"
                       alt="Produit sans image"
                     />
                   <?php endif; ?>
 
-                  <h5 class="card-title"><?= htmlspecialchars($product['nom']) ?></h5>
-                  <div class="product-rating-summary">
-                    <span class="product-rating-stars"><?= renderProductStars((float)$productFeedback['average']) ?></span>
-                    <span>
-                      <?php if ((int)$productFeedback['count'] > 0): ?>
-                        <?= number_format((float)$productFeedback['average'], 1) ?> (<?= (int)$productFeedback['count'] ?> avis)
+                  <div class="card-body">
+                    <h3 class="card-title"><?= htmlspecialchars($product['nom']) ?></h3>
+
+                    <div class="product-meta">
+                      <span class="type-pill"><?= htmlspecialchars($product['product_type'] ?? 'General') ?></span>
+                      <span class="price-tag"><?= number_format((float)$product['prix'], 2) ?> MAD</span>
+                    </div>
+
+                    <div class="product-rating-summary">
+                      <span class="product-rating-stars"><?= renderProductStars((float)$productFeedback['average']) ?></span>
+                      <span>
+                        <?php if ((int)$productFeedback['count'] > 0): ?>
+                          <?= number_format((float)$productFeedback['average'], 1) ?> (<?= (int)$productFeedback['count'] ?> avis)
+                        <?php else: ?>
+                          Aucun avis
+                        <?php endif; ?>
+                      </span>
+                    </div>
+
+                    <div class="product-actions">
+                      <a class="btn-sh btn-secondary" href="Pages/product.php?id=<?= (int)$product['id'] ?>">Voir page</a>
+
+                      <?php if ($currentUser): ?>
+                        <form action="Backend/cart.php" method="POST" class="add-cart-form">
+                          <input type="hidden" name="product_name" value="<?= htmlspecialchars($product['nom']) ?>">
+                          <input type="hidden" name="product_price" value="<?= (float)$product['prix'] ?>">
+                          <input type="hidden" name="product_image" value="<?= htmlspecialchars($product['image'] ?? '') ?>">
+                          <input type="hidden" name="quantity" value="1">
+                          <input type="hidden" name="redirect" value="index.php?<?= htmlspecialchars(buildQuery(['added' => 1])) ?>">
+                          <button type="submit" class="btn-sh">Ajouter</button>
+                        </form>
                       <?php else: ?>
-                        Aucun avis
+                        <a class="btn-sh" href="Backend/login/Login.php">Login</a>
                       <?php endif; ?>
-                    </span>
+                    </div>
                   </div>
-                  <div class="price-tag">
-                    <?= number_format((float)$product['prix'], 2) ?> MAD
-                  </div>
-
-                  <a class="btn-sh btn-secondary" href="Pages/product.php?id=<?= (int)$product['id'] ?>">Voir page</a>
-
-                  <?php if ($currentUser): ?>
-                    <form action="Backend/cart.php" method="POST" class="details-button add-cart-form">
-                      <input type="hidden" name="product_name" value="<?= htmlspecialchars($product['nom']) ?>">
-                      <input type="hidden" name="product_price" value="<?= (float)$product['prix'] ?>">
-                      <input type="hidden" name="product_image" value="<?= htmlspecialchars($product['image'] ?? '') ?>">
-                      <input type="hidden" name="quantity" value="1">
-                      <input type="hidden" name="redirect" value="index.php<?= $search !== '' ? '?q=' . urlencode($search) : '' ?>">
-                      <button type="submit" class="btn-sh">Ajouter au panier</button>
-                    </form>
-                  <?php else: ?>
-                    <nav class="details-button"><a class="btn-sh" href="Backend/login/Login.php">Connectez-vous</a></nav>
-                  <?php endif; ?>
                 </div>
               </div>
             <?php endforeach; ?>
           <?php endif; ?>
-        </div>
+            </div>
+
+            <?php if ($totalPages > 1): ?>
+              <nav class="pagination-nav" aria-label="Pagination produits">
+                <a
+                  class="pagination-btn <?= $currentPage <= 1 ? 'disabled' : '' ?>"
+                  href="<?= $currentPage <= 1 ? '#' : htmlspecialchars(paginationUrl($currentPage - 1)) ?>"
+                  aria-disabled="<?= $currentPage <= 1 ? 'true' : 'false' ?>"
+                >
+                  Precedent
+                </a>
+
+                <div class="pagination-pages">
+                  <?php
+                    $startPage = max(1, $currentPage - 2);
+                    $endPage = min($totalPages, $currentPage + 2);
+                  ?>
+
+                  <?php if ($startPage > 1): ?>
+                    <a class="pagination-number" href="<?= htmlspecialchars(paginationUrl(1)) ?>">1</a>
+                    <?php if ($startPage > 2): ?>
+                      <span class="pagination-dots">...</span>
+                    <?php endif; ?>
+                  <?php endif; ?>
+
+                  <?php for ($pageNumber = $startPage; $pageNumber <= $endPage; $pageNumber++): ?>
+                    <a
+                      class="pagination-number <?= $pageNumber === $currentPage ? 'active' : '' ?>"
+                      href="<?= htmlspecialchars(paginationUrl($pageNumber)) ?>"
+                    >
+                      <?= (int)$pageNumber ?>
+                    </a>
+                  <?php endfor; ?>
+
+                  <?php if ($endPage < $totalPages): ?>
+                    <?php if ($endPage < $totalPages - 1): ?>
+                      <span class="pagination-dots">...</span>
+                    <?php endif; ?>
+                    <a class="pagination-number" href="<?= htmlspecialchars(paginationUrl($totalPages)) ?>"><?= (int)$totalPages ?></a>
+                  <?php endif; ?>
+                </div>
+
+                <a
+                  class="pagination-btn <?= $currentPage >= $totalPages ? 'disabled' : '' ?>"
+                  href="<?= $currentPage >= $totalPages ? '#' : htmlspecialchars(paginationUrl($currentPage + 1)) ?>"
+                  aria-disabled="<?= $currentPage >= $totalPages ? 'true' : 'false' ?>"
+                >
+                  Suivant
+                </a>
+              </nav>
+            <?php endif; ?>
+          </section>
       </div>
       </main>
     </div>

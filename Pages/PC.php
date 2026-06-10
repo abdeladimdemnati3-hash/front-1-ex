@@ -62,6 +62,12 @@ $cartStatus = $cartCount > 0 ? '(' . $cartCount . ' article(s))' : '(Vide)';
 
     * { box-sizing: border-box; }
 
+    html,
+    body {
+      width: 100%;
+      overflow-x: hidden;
+    }
+
     body {
       font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
       color: var(--text);
@@ -72,6 +78,7 @@ $cartStatus = $cartCount > 0 ? '(' . $cartCount . ' article(s))' : '(Vide)';
 
     .main-container {
       max-width: 1140px;
+      width: 100%;
       margin: 0 auto;
       padding: 0 16px;
     }
@@ -109,6 +116,7 @@ $cartStatus = $cartCount > 0 ? '(' . $cartCount . ' article(s))' : '(Vide)';
 
     .simple-search-form {
       flex: 1;
+      width: min(100%, 400px);
       max-width: 400px;
       display: flex;
       border: 1px solid var(--line);
@@ -253,6 +261,7 @@ $cartStatus = $cartCount > 0 ? '(' . $cartCount . ' article(s))' : '(Vide)';
       max-width: 500px;
       border-radius: 12px;
       max-height: 500px;
+      object-fit: cover;
     }
 
     .info {
@@ -520,8 +529,25 @@ $cartStatus = $cartCount > 0 ? '(' . $cartCount . ' article(s))' : '(Vide)';
 
       .header-top-row {
         flex-direction: column;
-        align-items: center;
+        align-items: stretch;
         gap: 10px;
+        padding: 12px;
+      }
+
+      .header-logo-block,
+      .user-actions {
+        justify-content: center;
+      }
+
+      .simple-search-form {
+        width: 100%;
+        max-width: none;
+        margin: 0;
+      }
+
+      .review-heading,
+      .review-item-header {
+        flex-wrap: wrap;
       }
 
       h1, h3{

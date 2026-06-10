@@ -4,6 +4,7 @@
   border: 1px solid #d8e0ea;
   border-radius: 16px;
   padding: 20px;
+  overflow: hidden;
 }
 
 .cart-page h1 {
@@ -49,4 +50,26 @@
 
 .checkout-btn:hover {
   background: #0a52b0;
+}
+
+@media (max-width: 767px) {
+  .cart-page {
+    margin-top: 18px;
+    padding: 14px;
+    border-radius: 12px;
+  }
+
+  .cart-page h1 {
+    font-size: 24px;
+  }
+
+  .cart-summary {
+    align-items: stretch;
+  }
+
+  .cart-summary,
+  .cart-summary form,
+  .checkout-btn {
+    width: 100%;
+  }
 }

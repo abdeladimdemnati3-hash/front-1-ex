@@ -61,6 +61,11 @@ try {
 }
 
 try {
+    $pdo->exec("ALTER TABLE orders ADD COLUMN order_number VARCHAR(40) DEFAULT NULL");
+} catch (Exception $e) {
+}
+
+try {
     $pdo->exec("ALTER TABLE order_items ADD COLUMN product_price DECIMAL(10,2) DEFAULT 0");
 } catch (Exception $e) {
 }
@@ -304,6 +309,7 @@ $avatarPath = $hasAvatar ? '../img/' . $userImage : '';
 
             <?php
                 $orderId = $order['id'] ?? 0;
+                $orderNumber = $order['order_number'] ?: ('CMD-' . date('Ymd', strtotime($order['created_at'] ?? 'now')) . '-' . str_pad((string)$orderId, 6, '0', STR_PAD_LEFT));
                 $orderStatus = $order['order_status'] ?? 'Pending';
                 $orderDate = $order['created_at'] ?? null;
                 $orderDateStr = $orderDate ? date('d/m/Y à H:i', strtotime($orderDate)) : 'Date non disponible';
@@ -315,7 +321,7 @@ $avatarPath = $hasAvatar ? '../img/' . $userImage : '';
               <div class="order-header">
 
                 <div class="order-info">
-                  <h3>Commande #<?= (int)$orderId ?></h3>
+                  <h3>Commande <?= htmlspecialchars($orderNumber) ?></h3>
 
                   <p class="order-date">
                     <i class="fas fa-calendar"></i>

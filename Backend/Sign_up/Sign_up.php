@@ -22,6 +22,20 @@
       <p class="subtitle">C'est simple et rapide.</p>
 
       <form action="Sign-ver.php" method="post" enctype="multipart/form-data">
+        <?php if (isset($_GET['error'])): ?>
+          <p class="error-message">
+            <?php
+              $messages = [
+                'missing' => 'Tous les champs sont obligatoires.',
+                'invalid' => 'Adresse email invalide.',
+                'short' => 'Le mot de passe doit contenir au moins 6 caracteres.',
+                'exists' => 'Un compte existe deja avec cet email.',
+                'database' => 'Erreur de base de donnees. Reessayez.'
+              ];
+              echo htmlspecialchars($messages[$_GET['error']] ?? 'Erreur inscription.');
+            ?>
+          </p>
+        <?php endif; ?>
 
       
 
@@ -38,10 +52,10 @@
         <input type="email" name="email" placeholder="enter your e-mail" required>
 
         <div style="margin-top:12px;">
-          <input type="password" name="mcd" placeholder="Entrer votre mot de passe" required>
+          <input type="password" name="mcd" placeholder="Entrer votre mot de passe" minlength="6" required>
         </div>
         <div style="margin-top:12px;">
-          <input type="file" name="image" placeholder="Ajouter une image de profil" required>
+          <input type="file" name="image" placeholder="Ajouter une image de profil">
         </div>
         
 

@@ -158,6 +158,13 @@ if (!$product) {
                 <option value="PC-Gamer" <?= ($product['product_type'] ?? 'General') === 'PC-Gamer' ? 'selected' : '' ?>>PC-Gamer</option>
                 <option value="CPU" <?= ($product['product_type'] ?? 'General') === 'CPU' ? 'selected' : '' ?>>CPU</option>
                 <option value="GPU" <?= ($product['product_type'] ?? 'General') === 'GPU' ? 'selected' : '' ?>>GPU</option>
+                <option value="Ram" <?= ($product['product_type'] ?? 'General') === 'Ram' ? 'selected' : '' ?>>Ram</option>
+                <option value="Disque" <?= ($product['product_type'] ?? 'General') === 'Disque' ? 'selected' : '' ?>>Disque</option>
+                <option value="Alimentation" <?= ($product['product_type'] ?? 'General') === 'Alimentation' ? 'selected' : '' ?>>Alimentation</option>
+                <option value="Clavier" <?= ($product['product_type'] ?? 'General') === 'Clavier' ? 'selected' : '' ?>>Clavier</option>
+                <option value="Souris" <?= ($product['product_type'] ?? 'General') === 'Souris' ? 'selected' : '' ?>>Souris</option>
+                <option value="Ecran" <?= ($product['product_type'] ?? 'General') === 'Ecran' ? 'selected' : '' ?>>Ecran</option>
+                
             </select>
             <input type="file" name="image" accept="image/*">
             <p class="hint">Laissez l'image vide pour garder l'image actuelle.</p>

@@ -21,6 +21,7 @@ if (!$userEmail) {
 $pdo->exec(
     "CREATE TABLE IF NOT EXISTS orders (
         id INT AUTO_INCREMENT PRIMARY KEY,
+        order_number VARCHAR(40) DEFAULT NULL,
         user_id INT NULL,
         user_name VARCHAR(255) NOT NULL,
         user_email VARCHAR(255) NOT NULL,
@@ -30,6 +31,11 @@ $pdo->exec(
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )"
 );
+
+try {
+    $pdo->exec("ALTER TABLE orders ADD COLUMN order_number VARCHAR(40) DEFAULT NULL");
+} catch (Exception $e) {
+}
 
 
 $pdo->exec(
@@ -73,6 +79,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
         $orderStmt->execute([$userId, $userName, $userEmail, $total]);
         
         $orderId = $pdo->lastInsertId();
+        $orderNumber = 'CMD-' . date('Ymd') . '-' . str_pad((string)$orderId, 6, '0', STR_PAD_LEFT);
+
+        $orderNumberStmt = $pdo->prepare("UPDATE orders SET order_number = ? WHERE id = ?");
+        $orderNumberStmt->execute([$orderNumber, $orderId]);
 
         
         $itemSql = "INSERT INTO order_items (order_id, product_name, product_price, quantity, subtotal) 
@@ -97,7 +107,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
 
         $pdo->commit();
 
-        $_SESSION['order_message'] = 'Commande passee avec succes! Numero de commande: #' . $orderId;
+        $_SESSION['order_message'] = 'Commande passee avec succes! Numero de commande: ' . $orderNumber;
         header("Location: ../Pages/panier.php");
         exit();
 

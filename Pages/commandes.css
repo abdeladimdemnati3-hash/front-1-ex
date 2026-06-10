@@ -4,6 +4,7 @@
   border: 1px solid #d8e0ea;
   border-radius: 16px;
   padding: 24px;
+  overflow: hidden;
 }
 
 .commandes-page h1 {
@@ -196,10 +197,12 @@
 .order-body {
   padding: 16px;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .order-items-table {
   width: 100%;
+  min-width: 560px;
   border-collapse: collapse;
   font-size: 14px;
 }
@@ -334,6 +337,7 @@
 @media (max-width: 768px) {
   .commandes-page {
     padding: 16px;
+    border-radius: 12px;
   }
 
   .commandes-page h1 {
@@ -393,5 +397,30 @@
 
   .total-amount {
     font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .commandes-page {
+    padding: 12px;
+  }
+
+  .filter-btn,
+  .btn-continue-shopping {
+    width: 100%;
+  }
+
+  .order-body {
+    padding: 10px;
+    margin: 0 -6px;
+  }
+
+  .order-footer {
+    justify-content: stretch;
+  }
+
+  .total-section {
+    width: 100%;
+    align-items: stretch;
   }
 }

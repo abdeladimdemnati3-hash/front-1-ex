@@ -24,6 +24,7 @@ $pdo->exec(
 		nom VARCHAR(255) NOT NULL,
 		prix DECIMAL(10,2) NOT NULL,
 		image VARCHAR(255) DEFAULT NULL,
+		description TEXT NULL,
 		type_product VARCHAR(100) DEFAULT 'General',
 		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 	)"
@@ -39,13 +40,32 @@ try {
 } catch (Exception $e) {
 }
 
+try {
+	$pdo->exec("ALTER TABLE produits ADD COLUMN description TEXT NULL");
+} catch (Exception $e) {
+}
+
 $nom = trim($_POST['nom'] ?? '');
 $prixRaw = trim($_POST['prix'] ?? '');
 $prixClean = str_replace([' ', ','], ['', '.'], $prixRaw);
 $type = trim($_POST['type'] ?? 'General');
+$description = trim($_POST['description'] ?? '');
 $errors = [];
 
-$allowedTypes = ['PC', 'Laptop', 'PC-Gamer', 'CPU', 'GPU', 'General'];
+$allowedTypes = [
+	'PC',
+	'Laptop',
+	'PC-Gamer',
+	'CPU',
+	'GPU',
+	'Ram',
+	'Disque',
+	'Alimentation',
+	'Clavier',
+	'Souris',
+	'Ecran',
+	'General',
+];
 
 if ($nom === '') {
 	$errors[] = 'Le nom du produit est obligatoire';
@@ -101,7 +121,15 @@ if (count($errors) > 0) {
 }
 
 $imageName = time() . "_" . preg_replace('/[^a-zA-Z0-9._-]/', '_', $image);
-$imgPath = "../../img/" . $imageName;
+$imgDir = __DIR__ . "/../../img";
+$imgPath = $imgDir . "/" . $imageName;
+
+if (!is_dir($imgDir) || !is_writable($imgDir)) {
+	$errors[] = 'Le dossier img est introuvable ou non accessible en ecriture';
+	$_SESSION['product_errors'] = $errors;
+	header("Location: admin.php");
+	exit();
+}
 
 if (!move_uploaded_file($tmp, $imgPath)) {
 	$errors[] = 'Impossible de deplacer le fichier image';
@@ -111,9 +139,9 @@ if (!move_uploaded_file($tmp, $imgPath)) {
 }
 
 try {
-	$sql = "INSERT INTO produits (nom, prix, image, type_product, product_type) VALUES (?, ?, ?, ?, ?)";
+	$sql = "INSERT INTO produits (nom, prix, image, description, type_product, product_type) VALUES (?, ?, ?, ?, ?, ?)";
 	$stmt = $pdo->prepare($sql);
-	$stmt->execute([$nom, $prix, $imageName, $type, $type]);
+	$stmt->execute([$nom, $prix, $imageName, $description, $type, $type]);
 
 	header("Location: admin.php?status=added");
 	exit();

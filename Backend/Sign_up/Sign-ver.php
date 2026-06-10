@@ -2,11 +2,21 @@
 include "../../config/db.php";
 
 $nom = $_POST['nom'] ?? '';
-$email = $_POST['email'] ?? '';
+$email = trim($_POST['email'] ?? '');
 $mdp = $_POST['mcd'] ?? '';
 
-if(empty($nom) || empty($email) || empty($mdp)){
-    echo "les champs sont obligatoires";
+if(empty(trim($nom)) || empty($email) || empty($mdp)){
+    header("Location: Sign_up.php?error=missing");
+    exit();
+}
+
+if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    header("Location: Sign_up.php?error=invalid");
+    exit();
+}
+
+if (strlen($mdp) < 6) {
+    header("Location: Sign_up.php?error=short");
     exit();
 }
 
@@ -28,10 +38,24 @@ if(isset($_FILES['image']) && $_FILES['image']['error'] == 0){
     $imageName = "default.png";
 }
 
-$sql = "INSERT INTO users (NOM, EMAIL, mdp, type_admin, image) VALUES (?, ?, ?, ?, ?)";
-$stmt = $pdo->prepare($sql);
-$stmt->execute([$nom, $email, $mdp, 'N', $imageName]);
+try {
+    $checkSql = "SELECT id FROM app_users WHERE EMAIL = ? OR LOWER(EMAIL) = ? LIMIT 1";
+    $checkStmt = $pdo->prepare($checkSql);
+    $checkStmt->execute([$email, strtolower($email)]);
+
+    if ($checkStmt->fetch(PDO::FETCH_ASSOC)) {
+        header("Location: Sign_up.php?error=exists");
+        exit();
+    }
+
+    $sql = "INSERT INTO app_users (NOM, EMAIL, mdp, type_admin, image) VALUES (?, ?, ?, ?, ?)";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([trim($nom), $email, $mdp, 'N', $imageName]);
+} catch (PDOException $e) {
+    header("Location: Sign_up.php?error=database");
+    exit();
+}
 
 
-header("Location: ../login/login.php");
+header("Location: ../login/Login.php?signup=success");
 exit();

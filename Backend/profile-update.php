@@ -66,7 +66,7 @@ if ($newImage !== 'default.png' && (!file_exists($imagePath) || !is_file($imageP
 
 
 try {
-    $updateSql = "UPDATE users SET NOM = ?, image = ? WHERE EMAIL = ?";
+    $updateSql = "UPDATE app_users SET NOM = ?, image = ? WHERE EMAIL = ?";
     $updateStmt = $pdo->prepare($updateSql);
     $result = $updateStmt->execute([$newName, $newImage, $currentEmail]);
     
@@ -75,7 +75,7 @@ try {
     }
 } catch (Exception $e) {
     
-    $updateSql = "UPDATE users SET NOM = ?, image = ? WHERE email = ?";
+    $updateSql = "UPDATE app_users SET NOM = ?, image = ? WHERE EMAIL = ?";
     $updateStmt = $pdo->prepare($updateSql);
     $updateStmt->execute([$newName, $newImage, $currentEmail]);
 }

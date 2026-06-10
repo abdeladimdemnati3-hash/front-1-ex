@@ -7,21 +7,21 @@
   justify-content: flex-start;
   align-items: center;
   gap: 16px;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   width: 100%;
 }
 
 .contact-page .main-nav-buttons {
   display: flex;
   gap: 10px;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
 }
 
 .contact-page .auth-buttons-group {
   display: flex;
   gap: 10px;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   margin-top: 0;
   margin-left: auto;
   align-items: center;
@@ -137,11 +137,49 @@
 .contact-page .main-nav-buttons,
   .contact-page .auth-buttons-group {
     display: flex;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
   gap: 10px;
 }
 
 .auth-buttons-group {
   margin-top: 0;
   justify-content: flex-end;
+}
+
+@media (max-width: 767px) {
+  .contact-shell {
+    margin-top: 18px;
+  }
+
+  .contact-page .main-container > nav {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .contact-page .main-nav-buttons,
+  .contact-page .auth-buttons-group {
+    width: 100%;
+    justify-content: center;
+    margin-left: 0;
+  }
+
+  .contact-page .nav-button,
+  .contact-page .auth-button {
+    flex: 1 1 calc(50% - 10px);
+    min-width: 0;
+    font-size: 14px;
+  }
+
+  .contact-form {
+    padding: 16px;
+    border-radius: 12px;
+  }
+}
+
+@media (max-width: 420px) {
+  .contact-page .nav-button,
+  .contact-page .auth-button {
+    flex-basis: 100%;
+  }
 }

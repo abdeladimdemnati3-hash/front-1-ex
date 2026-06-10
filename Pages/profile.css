@@ -4,6 +4,7 @@
   border: 1px solid #d8e0ea;
   border-radius: 16px;
   padding: 20px;
+  overflow: hidden;
 }
 
 .profile-page h1 {
@@ -63,6 +64,12 @@
 }
 
 @media (max-width: 767px) {
+  .profile-page {
+    margin-top: 18px;
+    padding: 14px;
+    border-radius: 12px;
+  }
+
   .profile-card {
     grid-template-columns: 1fr;
   }
@@ -70,5 +77,9 @@
   .avatar {
     width: 140px;
     height: 140px;
+  }
+
+  .profile-form .btn-sh {
+    width: 100%;
   }
 }

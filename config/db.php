@@ -1,6 +1,6 @@
 <?php
 $host = "localhost";
-$dbname = "buyease";
+$dbname = "buyease-clean";
 $user = "root";
 $pass = "";
 
